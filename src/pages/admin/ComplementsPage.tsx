@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { 
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
 } from "@/components/ui/select";
@@ -14,13 +15,13 @@ import {
 } from "lucide-react";
 import { showSuccess } from "@/utils/toast";
 
-const INITIAL_COMPLEMENT_CATEGORIES = [
+const INITIAL_COMPLEMENTS = [
   { id: 1, name: "OPÇÕES DE REFRIGERANTES", type: "unica", itemsCount: 3, status: true },
   { id: 2, name: "ADICIONAIS DE BURGER", type: "multipla", itemsCount: 5, status: true },
 ];
 
-const ComplementCategoriesPage = () => {
-  const [categories, setCategories] = useState(INITIAL_COMPLEMENT_CATEGORIES);
+const ComplementsPage = () => {
+  const [categories, setCategories] = useState(INITIAL_COMPLEMENTS);
   const [isEditing, setIsEditing] = useState(false);
   const [search, setSearch] = useState("");
   
@@ -28,7 +29,7 @@ const ComplementCategoriesPage = () => {
   const [catName, setCatName] = useState("");
   const [catType, setCatType] = useState("unica");
   const [catItems, setCatItems] = useState([
-    { id: 1, name: "Coca-Cola Tradicional", price: "R$ 0,00", active: true },
+    { id: 1, name: "", price: "R$ 0,00", active: true },
   ]);
 
   const filteredCategories = useMemo(() => {
@@ -65,7 +66,7 @@ const ComplementCategoriesPage = () => {
     setIsEditing(false);
     setCatName("");
     setCatItems([{ id: 1, name: "", price: "R$ 0,00", active: true }]);
-    showSuccess("Categoria salva com sucesso!");
+    showSuccess("Complemento salvo com sucesso!");
   };
 
   const addItem = () => {
@@ -81,13 +82,13 @@ const ComplementCategoriesPage = () => {
       <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
-            Categorias de Adicionais <span className="text-orange-600">({categories.length})</span>
+            Gestão de Complementos <span className="text-orange-600">({categories.length})</span>
           </h1>
-          <p className="text-slate-500 font-medium">Gerencie grupos de complementos e suas regras.</p>
+          <p className="text-slate-500 font-medium">Crie grupos de adicionais para seus produtos.</p>
         </div>
         {!isEditing && (
           <Button onClick={() => setIsEditing(true)} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-12 px-6">
-            <Plus size={18} className="mr-2" /> Nova Categoria
+            <Plus size={18} className="mr-2" /> Novo Complemento
           </Button>
         )}
       </header>
@@ -96,29 +97,29 @@ const ComplementCategoriesPage = () => {
         <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4">
           <div className="p-8 border-b border-slate-50 flex items-center gap-3">
              <Settings2 className="text-orange-500" size={20} />
-             <h3 className="font-black text-slate-900 uppercase tracking-tight">Criar Nova Categoria</h3>
+             <h3 className="font-black text-slate-900 uppercase tracking-tight">Configurar Complemento</h3>
           </div>
           
           <div className="p-8 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-xs font-black uppercase text-slate-400">Nome Adicional:</Label>
+                <Label className="text-xs font-black uppercase text-slate-400">Nome do Grupo:</Label>
                 <Input 
                   value={catName}
                   onChange={(e) => setCatName(e.target.value)}
-                  placeholder="Ex: Opções de Refrigerantes" 
+                  placeholder="Ex: Escolha seu molho" 
                   className="rounded-xl h-12 font-bold" 
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-black uppercase text-slate-400">Tipo de Seleção:</Label>
+                <Label className="text-xs font-black uppercase text-slate-400">Regra de Seleção:</Label>
                 <Select value={catType} onValueChange={setCatType}>
                   <SelectTrigger className="h-12 rounded-xl font-bold">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
-                    <SelectItem value="unica" className="font-bold">Seleção Única</SelectItem>
-                    <SelectItem value="multipla" className="font-bold">Seleção Múltipla</SelectItem>
+                    <SelectItem value="unica" className="font-bold">Apenas uma opção (Rádio)</SelectItem>
+                    <SelectItem value="multipla" className="font-bold">Múltiplas opções (Checkbox)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -128,10 +129,10 @@ const ComplementCategoriesPage = () => {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                   <ListTree className="text-slate-400" size={18} />
-                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">Itens do Complemento</h4>
+                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">Opções do Grupo</h4>
                 </div>
                 <Button variant="outline" type="button" size="sm" onClick={addItem} className="rounded-lg font-bold">
-                  <Plus size={14} className="mr-1" /> Adicionar Linha
+                  <Plus size={14} className="mr-1" /> Adicionar Opção
                 </Button>
               </div>
 
@@ -139,7 +140,7 @@ const ComplementCategoriesPage = () => {
                 {catItems.map((item) => (
                   <div key={item.id} className="flex flex-col md:flex-row gap-3 items-center group">
                     <Input 
-                      placeholder="Nome do item (ex: Coca-Cola)" 
+                      placeholder="Nome da opção (ex: Maionese Caseira)" 
                       className="rounded-xl h-12 flex-[3] font-bold" 
                       value={item.name}
                       onChange={(e) => setCatItems(catItems.map(i => i.id === item.id ? { ...i, name: e.target.value } : i))}
@@ -171,7 +172,7 @@ const ComplementCategoriesPage = () => {
           <div className="p-8 bg-slate-50 border-t flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setIsEditing(false)} className="rounded-xl font-bold uppercase text-[10px] h-12">Cancelar</Button>
             <Button onClick={handleSave} className="bg-slate-900 hover:bg-black text-white rounded-xl font-black uppercase tracking-widest text-[10px] h-12 px-10">
-              Salvar Categoria
+              Salvar Complemento
             </Button>
           </div>
         </div>
@@ -181,7 +182,7 @@ const ComplementCategoriesPage = () => {
             <div className="relative w-full md:w-96">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <Input 
-                placeholder="Pesquisar categoria de adicional..." 
+                placeholder="Pesquisar nos complementos..." 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10 h-12 bg-white rounded-xl border-slate-200"
@@ -193,9 +194,9 @@ const ComplementCategoriesPage = () => {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50/50">
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nome da Categoria</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Nº de Itens</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Grupo</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Regra</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Itens</th>
                   <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
                   <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações</th>
                 </tr>
@@ -207,7 +208,7 @@ const ComplementCategoriesPage = () => {
                     <td className="px-8 py-4 text-xs font-bold text-slate-500 uppercase">
                       {cat.type === 'unica' ? 'Seleção Única' : 'Seleção Múltipla'}
                     </td>
-                    <td className="px-8 py-4 text-center font-bold text-slate-600">{cat.itemsCount} itens</td>
+                    <td className="px-8 py-4 text-center font-bold text-slate-600">{cat.itemsCount}</td>
                     <td className="px-8 py-4 text-center">
                       <Badge variant="outline" className={`border-none font-black text-[9px] uppercase px-2 py-0.5 rounded-md ${cat.status ? 'bg-slate-100 text-slate-500' : 'bg-red-50 text-red-500'}`}>
                         {cat.status ? 'ATIVO' : 'INATIVO'}
@@ -234,4 +235,4 @@ const ComplementCategoriesPage = () => {
   );
 };
 
-export default ComplementCategoriesPage;
+export default ComplementsPage;

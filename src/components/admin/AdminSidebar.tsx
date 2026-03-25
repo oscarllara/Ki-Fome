@@ -25,9 +25,8 @@ const MENU_STRUCTURE: NavItem[] = [
     title: "Itens & Menu", 
     icon: <UtensilsCrossed size={20} />, 
     subItems: [
-      { title: "Categorias de complementos", href: "/admin/menu/complement-categories" },
-      { title: "Complementos", href: "/admin/menu/complements" },
       { title: "Categorias de menu", href: "/admin/menu/menu-categories" },
+      { title: "Complementos", href: "/admin/menu/complements" },
       { title: "Itens", href: "/admin/menu/items" },
     ]
   },

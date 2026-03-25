@@ -13,7 +13,7 @@ import NotFound from "./pages/NotFound";
 // Páginas Administrativas
 import StoresPage from "./pages/admin/StoresPage";
 import MenuCategoriesPage from "./pages/admin/MenuCategoriesPage";
-import ComplementCategoriesPage from "./pages/admin/ComplementCategoriesPage";
+import ComplementsPage from "./pages/admin/ComplementsPage";
 import ItemsPage from "./pages/admin/ItemsPage";
 import GenericAdminPage from "./pages/admin/GenericAdminPage";
 
@@ -37,8 +37,7 @@ const App = () => (
           
           {/* Menu & Itens */}
           <Route path="/admin/menu/menu-categories" element={<MenuCategoriesPage />} />
-          <Route path="/admin/menu/complement-categories" element={<ComplementCategoriesPage />} />
-          <Route path="/admin/menu/complements" element={<GenericAdminPage title="Complementos" />} />
+          <Route path="/admin/menu/complements" element={<ComplementsPage />} />
           <Route path="/admin/menu/items" element={<ItemsPage />} />
           
           {/* Usuários */}
