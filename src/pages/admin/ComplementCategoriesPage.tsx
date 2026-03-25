@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,24 +10,34 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
 } from "@/components/ui/select";
 import { 
-  Plus, Trash2, ListTree, Settings2
+  Plus, Trash2, ListTree, Settings2, Search, Edit2, GripVertical
 } from "lucide-react";
 import { showSuccess } from "@/utils/toast";
 
+const INITIAL_COMPLEMENT_CATEGORIES = [
+  { id: 1, name: "OPÇÕES DE REFRIGERANTES", type: "unica", itemsCount: 3, status: true },
+  { id: 2, name: "ADICIONAIS DE BURGER", type: "multipla", itemsCount: 5, status: true },
+];
+
 const ComplementCategoriesPage = () => {
+  const [categories, setCategories] = useState(INITIAL_COMPLEMENT_CATEGORIES);
   const [isEditing, setIsEditing] = useState(false);
-  const [items, setItems] = useState([
+  const [search, setSearch] = useState("");
+  
+  // Dados do formulário
+  const [catName, setCatName] = useState("");
+  const [catType, setCatType] = useState("unica");
+  const [catItems, setCatItems] = useState([
     { id: 1, name: "Coca-Cola Tradicional", price: "R$ 0,00", active: true },
-    { id: 2, name: "Cola-Cola Zero", price: "R$ 0,00", active: true },
-    { id: 3, name: "Guaraná Antártica", price: "R$ 0,00", active: true },
   ]);
 
+  const filteredCategories = useMemo(() => {
+    return categories.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
+  }, [categories, search]);
+
   const formatCurrency = (value: string) => {
-    // Remove tudo que não é dígito
     const digits = value.replace(/\D/g, "");
     if (!digits || digits === "000") return "R$ 0,00";
-    
-    // Converte para centavos e formata
     const amount = (parseInt(digits) / 100).toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
@@ -37,65 +47,72 @@ const ComplementCategoriesPage = () => {
 
   const handlePriceChange = (id: number, rawValue: string) => {
     const formatted = formatCurrency(rawValue);
-    setItems(items.map(item => item.id === id ? { ...item, price: formatted } : item));
+    setCatItems(catItems.map(item => item.id === id ? { ...item, price: formatted } : item));
   };
 
-  const handlePriceFocus = (id: number, currentPrice: string) => {
-    // Se o valor for o padrão, limpa para o usuário digitar
-    if (currentPrice === "R$ 0,00") {
-      setItems(items.map(item => item.id === id ? { ...item, price: "" } : item));
-    }
-  };
+  const handleSave = () => {
+    if (!catName) return;
 
-  const handlePriceBlur = (id: number, currentPrice: string) => {
-    // Se o campo ficar vazio, volta para o padrão
-    if (!currentPrice || currentPrice === "R$ ") {
-      setItems(items.map(item => item.id === id ? { ...item, price: "R$ 0,00" } : item));
-    }
+    const newCategory = {
+      id: Date.now(),
+      name: catName.toUpperCase(),
+      type: catType,
+      itemsCount: catItems.length,
+      status: true
+    };
+
+    setCategories([newCategory, ...categories]);
+    setIsEditing(false);
+    setCatName("");
+    setCatItems([{ id: 1, name: "", price: "R$ 0,00", active: true }]);
+    showSuccess("Categoria salva com sucesso!");
   };
 
   const addItem = () => {
-    setItems([...items, { id: Date.now(), name: "", price: "R$ 0,00", active: true }]);
+    setCatItems([...catItems, { id: Date.now(), name: "", price: "R$ 0,00", active: true }]);
   };
 
   const removeItem = (id: number) => {
-    setItems(items.filter(item => item.id !== id));
+    setCatItems(catItems.filter(item => item.id !== id));
   };
 
   return (
     <AdminLayout>
-      <header className="mb-8 flex justify-between items-center">
+      <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Categorias de Adicionais</h1>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
+            Categorias de Adicionais <span className="text-orange-600">({categories.length})</span>
+          </h1>
           <p className="text-slate-500 font-medium">Gerencie grupos de complementos e suas regras.</p>
         </div>
         {!isEditing && (
           <Button onClick={() => setIsEditing(true)} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-12 px-6">
-            <Plus size={18} className="mr-2" /> Adicionar Categoria
+            <Plus size={18} className="mr-2" /> Nova Categoria
           </Button>
         )}
       </header>
 
       {isEditing ? (
-        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4">
           <div className="p-8 border-b border-slate-50 flex items-center gap-3">
              <Settings2 className="text-orange-500" size={20} />
-             <h3 className="font-black text-slate-900 uppercase tracking-tight">Detalhes Adicionais</h3>
+             <h3 className="font-black text-slate-900 uppercase tracking-tight">Criar Nova Categoria</h3>
           </div>
           
           <div className="p-8 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-xs font-black uppercase text-slate-400 flex items-center">
-                  <span className="text-red-500 mr-1">*</span>Nome Adicional:
-                </Label>
-                <Input placeholder="Ex: Opções de Refrigerantes" className="rounded-xl h-12 font-medium" />
+                <Label className="text-xs font-black uppercase text-slate-400">Nome Adicional:</Label>
+                <Input 
+                  value={catName}
+                  onChange={(e) => setCatName(e.target.value)}
+                  placeholder="Ex: Opções de Refrigerantes" 
+                  className="rounded-xl h-12 font-bold" 
+                />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-black uppercase text-slate-400 flex items-center">
-                  <span className="text-red-500 mr-1">*</span>Tipo:
-                </Label>
-                <Select defaultValue="unica">
+                <Label className="text-xs font-black uppercase text-slate-400">Tipo de Seleção:</Label>
+                <Select value={catType} onValueChange={setCatType}>
                   <SelectTrigger className="h-12 rounded-xl font-bold">
                     <SelectValue />
                   </SelectTrigger>
@@ -105,49 +122,43 @@ const ComplementCategoriesPage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="md:col-span-2 space-y-2">
-                <Label className="text-xs font-black uppercase text-slate-400">Descrição:</Label>
-                <Input placeholder="Breve descritivo (50-80 caracteres)" className="rounded-xl h-12" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase italic">(Isso será exibido na página de Itens ao selecionar Categorias de Adicionais)</p>
-              </div>
             </div>
 
             <div className="pt-8 border-t border-slate-50">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                   <ListTree className="text-slate-400" size={18} />
-                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">Adicionais</h4>
+                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">Itens do Complemento</h4>
                 </div>
-                <Button variant="outline" type="button" size="sm" onClick={addItem} className="rounded-lg font-bold border-slate-200">
-                  <Plus size={14} className="mr-1" /> Adicionar item
+                <Button variant="outline" type="button" size="sm" onClick={addItem} className="rounded-lg font-bold">
+                  <Plus size={14} className="mr-1" /> Adicionar Linha
                 </Button>
               </div>
 
               <div className="space-y-3">
-                {items.map((item) => (
+                {catItems.map((item) => (
                   <div key={item.id} className="flex flex-col md:flex-row gap-3 items-center group">
                     <Input 
-                      placeholder="Nome do item" 
+                      placeholder="Nome do item (ex: Coca-Cola)" 
                       className="rounded-xl h-12 flex-[3] font-bold" 
-                      defaultValue={item.name}
+                      value={item.name}
+                      onChange={(e) => setCatItems(catItems.map(i => i.id === item.id ? { ...i, name: e.target.value } : i))}
                     />
                     <Input 
-                      placeholder="R$ 0,00" 
                       className="rounded-xl h-12 flex-1 font-black text-center" 
                       value={item.price}
                       onChange={(e) => handlePriceChange(item.id, e.target.value)}
-                      onFocus={() => handlePriceFocus(item.id, item.price)}
-                      onBlur={() => handlePriceBlur(item.id, item.price)}
+                      onFocus={() => item.price === "R$ 0,00" && handlePriceChange(item.id, "")}
+                      onBlur={() => (!item.price || item.price === "R$ ") && handlePriceChange(item.id, "0")}
                     />
                     <div className="flex items-center gap-4 px-4 h-12 bg-slate-50 rounded-xl border border-slate-100">
-                      <Switch checked={item.active} />
+                      <Switch checked={item.active} onCheckedChange={(val) => setCatItems(catItems.map(i => i.id === item.id ? { ...i, active: val } : i))} />
                     </div>
                     <Button 
                       variant="ghost" 
-                      type="button"
                       size="icon" 
                       onClick={() => removeItem(item.id)}
-                      className="rounded-xl h-12 w-12 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                      className="rounded-xl h-12 w-12 text-red-500 hover:bg-red-50"
                     >
                       <Trash2 size={18} />
                     </Button>
@@ -158,18 +169,65 @@ const ComplementCategoriesPage = () => {
           </div>
 
           <div className="p-8 bg-slate-50 border-t flex justify-end gap-3">
-            <Button variant="ghost" type="button" onClick={() => setIsEditing(false)} className="rounded-xl font-bold uppercase text-[10px] h-12 px-8">Cancelar</Button>
-            <Button onClick={() => { setIsEditing(false); showSuccess("Categoria salva!"); }} className="bg-slate-900 hover:bg-black text-white rounded-xl font-black uppercase tracking-widest text-[10px] h-12 px-10">
+            <Button variant="ghost" onClick={() => setIsEditing(false)} className="rounded-xl font-bold uppercase text-[10px] h-12">Cancelar</Button>
+            <Button onClick={handleSave} className="bg-slate-900 hover:bg-black text-white rounded-xl font-black uppercase tracking-widest text-[10px] h-12 px-10">
               Salvar Categoria
             </Button>
           </div>
         </div>
       ) : (
-        <div className="text-center py-20 bg-white rounded-[2.5rem] border border-slate-100 border-dashed">
-          <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-300">
-            <ListTree size={32} />
+        <div className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm">
+          <div className="p-6 border-b border-slate-50 bg-slate-50/30">
+            <div className="relative w-full md:w-96">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <Input 
+                placeholder="Pesquisar categoria de adicional..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 h-12 bg-white rounded-xl border-slate-200"
+              />
+            </div>
           </div>
-          <p className="text-slate-400 font-bold uppercase text-xs">Selecione uma categoria para editar ou crie uma nova.</p>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50/50">
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nome da Categoria</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Nº de Itens</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filteredCategories.map((cat) => (
+                  <tr key={cat.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-8 py-4 font-black text-slate-900 uppercase">{cat.name}</td>
+                    <td className="px-8 py-4 text-xs font-bold text-slate-500 uppercase">
+                      {cat.type === 'unica' ? 'Seleção Única' : 'Seleção Múltipla'}
+                    </td>
+                    <td className="px-8 py-4 text-center font-bold text-slate-600">{cat.itemsCount} itens</td>
+                    <td className="px-8 py-4 text-center">
+                      <Badge variant="outline" className={`border-none font-black text-[9px] uppercase px-2 py-0.5 rounded-md ${cat.status ? 'bg-slate-100 text-slate-500' : 'bg-red-50 text-red-500'}`}>
+                        {cat.status ? 'ATIVO' : 'INATIVO'}
+                      </Badge>
+                    </td>
+                    <td className="px-8 py-4 text-right">
+                      <div className="flex justify-end items-center gap-2">
+                        <Button variant="ghost" size="icon" className="h-9 w-9 bg-slate-900 text-white rounded-lg">
+                          <Edit2 size={14} />
+                        </Button>
+                        <button className="text-slate-300 hover:text-slate-600">
+                          <GripVertical size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </AdminLayout>
