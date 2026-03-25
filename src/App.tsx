@@ -10,8 +10,11 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
-// Novas páginas Administrativas
+// Páginas Administrativas
 import StoresPage from "./pages/admin/StoresPage";
+import MenuCategoriesPage from "./pages/admin/MenuCategoriesPage";
+import ComplementCategoriesPage from "./pages/admin/ComplementCategoriesPage";
+import ItemsPage from "./pages/admin/ItemsPage";
 import GenericAdminPage from "./pages/admin/GenericAdminPage";
 
 const queryClient = new QueryClient();
@@ -33,10 +36,10 @@ const App = () => (
           <Route path="/admin/stores" element={<StoresPage />} />
           
           {/* Menu & Itens */}
-          <Route path="/admin/menu/complement-categories" element={<GenericAdminPage title="Categorias de Complementos" />} />
+          <Route path="/admin/menu/menu-categories" element={<MenuCategoriesPage />} />
+          <Route path="/admin/menu/complement-categories" element={<ComplementCategoriesPage />} />
           <Route path="/admin/menu/complements" element={<GenericAdminPage title="Complementos" />} />
-          <Route path="/admin/menu/menu-categories" element={<GenericAdminPage title="Categorias de Menu" />} />
-          <Route path="/admin/menu/items" element={<GenericAdminPage title="Itens do Cardápio" />} />
+          <Route path="/admin/menu/items" element={<ItemsPage />} />
           
           {/* Usuários */}
           <Route path="/admin/users/all" element={<GenericAdminPage title="Todos os Usuários" />} />
