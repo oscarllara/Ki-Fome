@@ -17,13 +17,45 @@ import { showSuccess } from "@/utils/toast";
 const ComplementCategoriesPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [items, setItems] = useState([
-    { id: 1, name: "Coca-Cola Tradicional", price: "0.00", active: true },
-    { id: 2, name: "Cola-Cola Zero", price: "0.00", active: true },
-    { id: 3, name: "Guaraná Antártica", price: "0.00", active: true },
+    { id: 1, name: "Coca-Cola Tradicional", price: "R$ 0,00", active: true },
+    { id: 2, name: "Cola-Cola Zero", price: "R$ 0,00", active: true },
+    { id: 3, name: "Guaraná Antártica", price: "R$ 0,00", active: true },
   ]);
 
+  const formatCurrency = (value: string) => {
+    // Remove tudo que não é dígito
+    const digits = value.replace(/\D/g, "");
+    if (!digits || digits === "000") return "R$ 0,00";
+    
+    // Converte para centavos e formata
+    const amount = (parseInt(digits) / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+    return amount;
+  };
+
+  const handlePriceChange = (id: number, rawValue: string) => {
+    const formatted = formatCurrency(rawValue);
+    setItems(items.map(item => item.id === id ? { ...item, price: formatted } : item));
+  };
+
+  const handlePriceFocus = (id: number, currentPrice: string) => {
+    // Se o valor for o padrão, limpa para o usuário digitar
+    if (currentPrice === "R$ 0,00") {
+      setItems(items.map(item => item.id === id ? { ...item, price: "" } : item));
+    }
+  };
+
+  const handlePriceBlur = (id: number, currentPrice: string) => {
+    // Se o campo ficar vazio, volta para o padrão
+    if (!currentPrice || currentPrice === "R$ ") {
+      setItems(items.map(item => item.id === id ? { ...item, price: "R$ 0,00" } : item));
+    }
+  };
+
   const addItem = () => {
-    setItems([...items, { id: Date.now(), name: "", price: "0.00", active: true }]);
+    setItems([...items, { id: Date.now(), name: "", price: "R$ 0,00", active: true }]);
   };
 
   const removeItem = (id: number) => {
@@ -86,7 +118,7 @@ const ComplementCategoriesPage = () => {
                   <ListTree className="text-slate-400" size={18} />
                   <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">Adicionais</h4>
                 </div>
-                <Button variant="outline" size="sm" onClick={addItem} className="rounded-lg font-bold border-slate-200">
+                <Button variant="outline" type="button" size="sm" onClick={addItem} className="rounded-lg font-bold border-slate-200">
                   <Plus size={14} className="mr-1" /> Adicionar item
                 </Button>
               </div>
@@ -100,19 +132,19 @@ const ComplementCategoriesPage = () => {
                       defaultValue={item.name}
                     />
                     <Input 
-                      placeholder="Preço" 
+                      placeholder="R$ 0,00" 
                       className="rounded-xl h-12 flex-1 font-black text-center" 
-                      defaultValue={item.price}
-                    />
-                    <Input 
-                      placeholder="." 
-                      className="rounded-xl h-12 flex-1" 
+                      value={item.price}
+                      onChange={(e) => handlePriceChange(item.id, e.target.value)}
+                      onFocus={() => handlePriceFocus(item.id, item.price)}
+                      onBlur={() => handlePriceBlur(item.id, item.price)}
                     />
                     <div className="flex items-center gap-4 px-4 h-12 bg-slate-50 rounded-xl border border-slate-100">
                       <Switch checked={item.active} />
                     </div>
                     <Button 
                       variant="ghost" 
+                      type="button"
                       size="icon" 
                       onClick={() => removeItem(item.id)}
                       className="rounded-xl h-12 w-12 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all"
@@ -126,7 +158,7 @@ const ComplementCategoriesPage = () => {
           </div>
 
           <div className="p-8 bg-slate-50 border-t flex justify-end gap-3">
-            <Button variant="ghost" onClick={() => setIsEditing(false)} className="rounded-xl font-bold uppercase text-[10px] h-12 px-8">Cancelar</Button>
+            <Button variant="ghost" type="button" onClick={() => setIsEditing(false)} className="rounded-xl font-bold uppercase text-[10px] h-12 px-8">Cancelar</Button>
             <Button onClick={() => { setIsEditing(false); showSuccess("Categoria salva!"); }} className="bg-slate-900 hover:bg-black text-white rounded-xl font-black uppercase tracking-widest text-[10px] h-12 px-10">
               Salvar Categoria
             </Button>
