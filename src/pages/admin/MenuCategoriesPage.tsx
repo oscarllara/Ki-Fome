@@ -6,32 +6,84 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Search, Edit2, GripVertical } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Plus, Search, Edit2, GripVertical, Save, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { showSuccess } from "@/utils/toast";
 
 const INITIAL_CATEGORIES = [
-  { id: 125, name: "LANCHES ARTESANAIS", itemsCount: 7, status: true, createdBy: "Derick De Carvalho", createdAt: "1 year ago" },
-  { id: 124, name: "SOBREMESAS", itemsCount: 0, status: true, createdBy: "Derick De Carvalho", createdAt: "1 year ago" },
-  { id: 123, name: "BEBIDAS", itemsCount: 0, status: true, createdBy: "Derick De Carvalho", createdAt: "1 year ago" },
-  { id: 122, name: "PIZZAS de 35 Cm / 8 Pedaços", itemsCount: 17, status: true, createdBy: "Derick De Carvalho", createdAt: "1 year ago" },
+  { id: 125, name: "LANCHES ARTESANAIS", itemsCount: 7, status: true, createdBy: "Derick De Carvalho", createdAt: "1 ano atrás" },
+  { id: 124, name: "SOBREMESAS", itemsCount: 0, status: true, createdBy: "Derick De Carvalho", createdAt: "1 ano atrás" },
+  { id: 123, name: "BEBIDAS", itemsCount: 0, status: true, createdBy: "Derick De Carvalho", createdAt: "1 ano atrás" },
+  { id: 122, name: "PIZZAS de 35 Cm / 8 Pedaços", itemsCount: 17, status: true, createdBy: "Derick De Carvalho", createdAt: "1 ano atrás" },
 ];
 
 const MenuCategoriesPage = () => {
   const [categories, setCategories] = useState(INITIAL_CATEGORIES);
   const [search, setSearch] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
+  
+  // Estados do formulário
+  const [formData, setFormData] = useState({ name: "", status: true });
 
-  // Ordenação Alfabética por padrão conforme solicitado
   const sortedCategories = useMemo(() => {
     return [...categories]
       .filter(cat => cat.name.toLowerCase().includes(search.toLowerCase()))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [categories, search]);
 
+  const openAddDialog = () => {
+    setEditingCategory(null);
+    setFormData({ name: "", status: true });
+    setIsDialogOpen(true);
+  };
+
+  const openEditDialog = (cat: any) => {
+    setEditingCategory(cat);
+    setFormData({ name: cat.name, status: cat.status });
+    setIsDialogOpen(true);
+  };
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name) return;
+
+    if (editingCategory) {
+      setCategories(categories.map(c => 
+        c.id === editingCategory.id 
+        ? { ...c, name: formData.name.toUpperCase(), status: formData.status } 
+        : c
+      ));
+      showSuccess("Categoria atualizada!");
+    } else {
+      const newCategory = {
+        id: Math.floor(Math.random() * 1000),
+        name: formData.name.toUpperCase(),
+        itemsCount: 0,
+        status: formData.status,
+        createdBy: "Dono do Sistema",
+        createdAt: "Agora mesmo"
+      };
+      setCategories([newCategory, ...categories]);
+      showSuccess("Nova categoria cadastrada!");
+    }
+
+    setIsDialogOpen(false);
+  };
+
   const toggleStatus = (id: number) => {
     setCategories(prev => prev.map(cat => 
       cat.id === id ? { ...cat, status: !cat.status } : cat
     ));
-    showSuccess("Status da categoria atualizado!");
+    showSuccess("Status da categoria alterado!");
   };
 
   return (
@@ -42,7 +94,10 @@ const MenuCategoriesPage = () => {
             Total <span className="text-orange-600">({categories.length})</span> Categorias de menu
           </h1>
         </div>
-        <Button className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-12 px-6">
+        <Button 
+          onClick={openAddDialog}
+          className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-12 px-6 shadow-lg shadow-emerald-100"
+        >
           <Plus size={18} className="mr-2" /> Adicionar nova categoria
         </Button>
       </div>
@@ -80,7 +135,7 @@ const MenuCategoriesPage = () => {
                   <td className="px-8 py-4 font-black text-slate-900 uppercase">{cat.name}</td>
                   <td className="px-8 py-4 text-center font-bold text-slate-600">{cat.itemsCount}</td>
                   <td className="px-8 py-4 text-center">
-                    <Badge variant="outline" className={`border-none font-black text-[9px] uppercase px-2 py-0.5 rounded-md ${cat.status ? 'bg-slate-100 text-slate-500' : 'bg-red-50 text-red-500'}`}>
+                    <Badge variant="outline" className={`border-none font-black text-[9px] uppercase px-3 py-1 rounded-full ${cat.status ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
                       {cat.status ? 'ENABLED' : 'DISABLED'}
                     </Badge>
                   </td>
@@ -92,7 +147,11 @@ const MenuCategoriesPage = () => {
                   <td className="px-8 py-4 text-xs font-bold text-slate-400">{cat.createdAt}</td>
                   <td className="px-8 py-4 text-right">
                     <div className="flex justify-end items-center gap-3">
-                      <Button variant="ghost" className="bg-slate-900 hover:bg-black text-white h-9 px-4 rounded-lg font-bold text-xs">
+                      <Button 
+                        onClick={() => openEditDialog(cat)}
+                        variant="ghost" 
+                        className="bg-slate-900 hover:bg-black text-white h-9 px-4 rounded-lg font-bold text-xs"
+                      >
                         Editar
                       </Button>
                       <Switch checked={cat.status} onCheckedChange={() => toggleStatus(cat.id)} />
@@ -107,6 +166,64 @@ const MenuCategoriesPage = () => {
           </table>
         </div>
       </div>
+
+      {/* MODAL DE CADASTRO / EDIÇÃO */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-md rounded-[2.5rem] p-0 overflow-hidden border-none">
+          <form onSubmit={handleSave}>
+            <DialogHeader className="p-8 bg-slate-900 text-white">
+              <DialogTitle className="text-xl font-black uppercase tracking-tight">
+                {editingCategory ? "Editar Categoria" : "Nova Categoria"}
+              </DialogTitle>
+              <DialogDescription className="text-slate-400 text-xs font-bold uppercase">
+                Defina o nome que aparecerá no cardápio do cliente.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="p-8 space-y-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nome da Categoria</Label>
+                <Input 
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Ex: BEBIDAS, PIZZAS..." 
+                  className="rounded-xl h-12 font-bold uppercase"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="flex flex-col">
+                  <span className="text-xs font-black text-slate-700 uppercase">Status da Categoria</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">Ativar exibição no cardápio</span>
+                </div>
+                <Switch 
+                  checked={formData.status} 
+                  onCheckedChange={(val) => setFormData({ ...formData, status: val })} 
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="p-8 bg-slate-50 flex gap-3">
+              <Button 
+                type="button" 
+                variant="ghost" 
+                onClick={() => setIsDialogOpen(false)}
+                className="rounded-xl font-bold uppercase text-[10px] h-12 flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                type="submit" 
+                className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-black uppercase tracking-widest text-[10px] h-12 flex-1 shadow-lg shadow-orange-100"
+              >
+                <Save size={16} className="mr-2" /> 
+                {editingCategory ? "Salvar Alterações" : "Cadastrar Agora"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };
