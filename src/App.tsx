@@ -10,6 +10,10 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
+// Novas páginas Administrativas
+import StoresPage from "./pages/admin/StoresPage";
+import GenericAdminPage from "./pages/admin/GenericAdminPage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -24,6 +28,35 @@ const App = () => (
           <Route path="/public" element={<PublicPortal />} />
           <Route path="/delivery" element={<DeliveryApp />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          
+          {/* Rotas Master Admin */}
+          <Route path="/admin/stores" element={<StoresPage />} />
+          
+          {/* Menu & Itens */}
+          <Route path="/admin/menu/complement-categories" element={<GenericAdminPage title="Categorias de Complementos" />} />
+          <Route path="/admin/menu/complements" element={<GenericAdminPage title="Complementos" />} />
+          <Route path="/admin/menu/menu-categories" element={<GenericAdminPage title="Categorias de Menu" />} />
+          <Route path="/admin/menu/items" element={<GenericAdminPage title="Itens do Cardápio" />} />
+          
+          {/* Usuários */}
+          <Route path="/admin/users/all" element={<GenericAdminPage title="Todos os Usuários" />} />
+          <Route path="/admin/users/customers" element={<GenericAdminPage title="Clientes" />} />
+          <Route path="/admin/users/owners" element={<GenericAdminPage title="Proprietários" />} />
+          <Route path="/admin/users/drivers" element={<GenericAdminPage title="Entregadores" />} />
+          <Route path="/admin/users/staff" element={<GenericAdminPage title="Funcionários" />} />
+          
+          {/* Pedidos */}
+          <Route path="/admin/orders/list" element={<GenericAdminPage title="Lista de Pedidos" />} />
+          <Route path="/admin/orders/live" element={<GenericAdminPage title="Pedidos ao Vivo" />} />
+          
+          {/* Relatórios */}
+          <Route path="/admin/reports/client" element={<GenericAdminPage title="Relatório de Clientes" />} />
+          <Route path="/admin/reports/store" element={<GenericAdminPage title="Relatório de Lojas" />} />
+          
+          {/* Configurações */}
+          <Route path="/admin/settings/zones" element={<GenericAdminPage title="Zonas (Franquias)" />} />
+          <Route path="/admin/settings/all" element={<GenericAdminPage title="Todas as Configurações" />} />
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
