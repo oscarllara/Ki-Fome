@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Star, ShieldCheck, MapPin, ArrowRight, Smartphone, Lock } from "lucide-react";
+import { ShoppingBag, Star, ShieldCheck, MapPin, ArrowRight, Smartphone, Lock, UserCog } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const PublicPortal = () => {
@@ -13,29 +13,36 @@ const PublicPortal = () => {
           <div className="w-10 h-10 bg-orange-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-orange-200">
             K
           </div>
-          <span className="text-2xl font-black text-slate-900 tracking-tighter">KIFOME<span className="text-orange-600">.ONLINE</span></span>
+          <span className="text-2xl font-black text-slate-900 tracking-tighter uppercase">KIFOME<span className="text-orange-600">.online</span></span>
         </div>
         
         <div className="hidden md:flex gap-8 font-bold text-slate-600 text-sm uppercase tracking-wide">
           <a href="#como-funciona" className="hover:text-orange-600 transition-colors">Como Funciona</a>
           <a href="#parceiros" className="hover:text-orange-600 transition-colors">Seja Parceiro</a>
-          <a href="#contato" className="hover:text-orange-600 transition-colors">Suporte</a>
         </div>
 
-        <Link to="/delivery">
-          <Button className="bg-orange-600 hover:bg-orange-700 rounded-2xl px-6 font-bold shadow-lg shadow-orange-200">
-            FAZER PEDIDO
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          {/* BOTÃO DE LOGIN ADICIONADO AQUI NO TOPO */}
+          <Link to="/login">
+            <Button variant="ghost" className="text-slate-500 font-bold hover:text-orange-600 hover:bg-orange-50 rounded-xl gap-2">
+              <UserCog size={18} /> Painel Gestor
+            </Button>
+          </Link>
+          <Link to="/delivery">
+            <Button className="bg-orange-600 hover:bg-orange-700 rounded-2xl px-6 font-bold shadow-lg shadow-orange-200">
+              FAZER PEDIDO
+            </Button>
+          </Link>
+        </div>
       </nav>
 
-      {/* Hero */}
+      {/* Hero Section */}
       <section className="container mx-auto px-6 py-16 md:py-28 flex flex-col md:flex-row items-center gap-16">
         <div className="flex-1 text-center md:text-left">
           <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-700 px-4 py-2 rounded-full text-xs font-black mb-8 border border-orange-100 uppercase tracking-widest">
             <Star size={14} className="fill-orange-600" /> O Melhor Delivery da Região
           </div>
-          <h1 className="text-5xl md:text-8xl font-black text-slate-900 leading-[0.9] mb-8 tracking-tighter">
+          <h1 className="text-5xl md:text-8xl font-black text-slate-900 leading-[0.9] mb-8 tracking-tighter uppercase">
             MATOU A <br />
             <span className="text-orange-600">FOME?</span> <br />
             PEDIU KIFOME.
@@ -46,11 +53,11 @@ const PublicPortal = () => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
             <Link to="/delivery">
-              <Button size="lg" className="bg-orange-600 hover:bg-orange-700 h-16 px-10 rounded-2xl text-lg font-black shadow-xl shadow-orange-100 group">
+              <Button size="lg" className="bg-orange-600 hover:bg-orange-700 h-16 px-10 rounded-2xl text-lg font-black shadow-xl shadow-orange-100 group uppercase">
                 COMEÇAR AGORA <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <Button variant="outline" size="lg" className="h-16 px-10 rounded-2xl text-lg font-bold border-2 border-slate-200 hover:bg-slate-50">
+            <Button variant="outline" size="lg" className="h-16 px-10 rounded-2xl text-lg font-bold border-2 border-slate-200 hover:bg-slate-50 uppercase">
               BAIXAR O APP
             </Button>
           </div>
@@ -65,7 +72,6 @@ const PublicPortal = () => {
               className="w-full h-full object-cover"
             />
           </div>
-          {/* Badge flutuante */}
           <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-3xl shadow-xl border border-slate-50 flex items-center gap-4 animate-bounce">
             <div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-green-100">
               <ShoppingBag size={24} />
@@ -106,17 +112,20 @@ const PublicPortal = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 text-center text-slate-400 border-t">
-        <div className="flex items-center justify-center gap-2 mb-4 opacity-50 grayscale">
-          <div className="w-6 h-6 bg-orange-600 rounded flex items-center justify-center text-white font-bold text-xs">K</div>
-          <span className="font-black text-slate-900">KIFOME.ONLINE</span>
+      <footer className="py-20 text-center text-slate-400 border-t bg-slate-50/50">
+        <div className="flex items-center justify-center gap-2 mb-6 grayscale opacity-60">
+          <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center text-white font-black text-sm">K</div>
+          <span className="font-black text-slate-900 tracking-tighter">KIFOME.ONLINE</span>
         </div>
-        <p className="text-xs font-bold uppercase tracking-widest mb-6">© 2024 Kifome Online - Todos os direitos reservados</p>
         
-        {/* Acesso Admin Discreto */}
-        <Link to="/login" className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-300 hover:text-orange-600 transition-colors uppercase tracking-widest">
-          <Lock size={10} /> Acesso Restrito
-        </Link>
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-xs font-bold uppercase tracking-[0.2em]">© 2024 Kifome Online - Todos os direitos reservados</p>
+          
+          {/* ACESSO DISCRETO MAS MAIS VISÍVEL AGORA */}
+          <Link to="/login" className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-full text-xs font-black text-slate-400 hover:text-orange-600 hover:border-orange-200 transition-all uppercase tracking-widest shadow-sm">
+            <Lock size={12} className="text-orange-500" /> Painel Administrativo
+          </Link>
+        </div>
       </footer>
     </div>
   );
