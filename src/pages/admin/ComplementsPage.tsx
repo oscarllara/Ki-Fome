@@ -11,26 +11,26 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
 } from "@/components/ui/select";
 import { 
-  Plus, Trash2, ListTree, Settings2, Search, Edit2, GripVertical
+  Plus, Trash2, ListTree, Settings2, Search, Edit2, ChevronUp, ChevronDown
 } from "lucide-react";
 import { showSuccess } from "@/utils/toast";
 
 const INITIAL_COMPLEMENTS = [
-  { id: 1, name: "OPÇÕES DE REFRIGERANTES", type: "unica", itemsCount: 3, status: true },
-  { id: 2, name: "ADICIONAIS DE BURGER", type: "multipla", itemsCount: 5, status: true },
+  { id: 1, name: "ADICIONAIS LANCHES", type: "multipla", itemsCount: 3, status: true },
+  { id: 2, name: "OPÇÕES DE REFRIGERANTES", type: "unica", itemsCount: 3, status: true },
+  { id: 3, name: "ADICIONAIS DE BURGER", type: "multipla", itemsCount: 5, status: true },
 ];
 
 const ComplementsPage = () => {
   const [categories, setCategories] = useState(INITIAL_COMPLEMENTS);
   const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   
   // Dados do formulário
   const [catName, setCatName] = useState("");
   const [catType, setCatType] = useState("unica");
-  const [catItems, setCatItems] = useState([
-    { id: 1, name: "", price: "R$ 0,00", active: true },
-  ]);
+  const [catItems, setCatItems] = useState<any[]>([]);
 
   const filteredCategories = useMemo(() => {
     return categories.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
@@ -51,29 +51,72 @@ const ComplementsPage = () => {
     setCatItems(catItems.map(item => item.id === id ? { ...item, price: formatted } : item));
   };
 
+  // Funções de Gerenciamento
+  const handleEdit = (cat: any) => {
+    setEditingId(cat.id);
+    setCatName(cat.name);
+    setCatType(cat.type);
+    // Simulando itens existentes ou começando com um vazio
+    setCatItems([{ id: Date.now(), name: "", price: "R$ 0,00", active: true }]);
+    setIsEditing(true);
+  };
+
   const handleSave = () => {
     if (!catName) return;
 
-    const newCategory = {
-      id: Date.now(),
-      name: catName.toUpperCase(),
-      type: catType,
-      itemsCount: catItems.length,
-      status: true
-    };
+    if (editingId) {
+      setCategories(categories.map(c => 
+        c.id === editingId 
+        ? { ...c, name: catName.toUpperCase(), type: catType, itemsCount: catItems.length } 
+        : c
+      ));
+      showSuccess("Complemento atualizado!");
+    } else {
+      const newCategory = {
+        id: Date.now(),
+        name: catName.toUpperCase(),
+        type: catType,
+        itemsCount: catItems.length,
+        status: true
+      };
+      setCategories([newCategory, ...categories]);
+      showSuccess("Novo complemento criado!");
+    }
 
-    setCategories([newCategory, ...categories]);
-    setIsEditing(false);
-    setCatName("");
-    setCatItems([{ id: 1, name: "", price: "R$ 0,00", active: true }]);
-    showSuccess("Complemento salvo com sucesso!");
+    resetForm();
   };
 
-  const addItem = () => {
+  const resetForm = () => {
+    setIsEditing(false);
+    setEditingId(null);
+    setCatName("");
+    setCatType("unica");
+    setCatItems([]);
+  };
+
+  const toggleStatus = (id: number) => {
+    setCategories(categories.map(c => 
+      c.id === id ? { ...c, status: !c.status } : c
+    ));
+    showSuccess("Status alterado com sucesso!");
+  };
+
+  // Funções de Ordenação
+  const moveItem = (index: number, direction: 'up' | 'down') => {
+    const newItems = [...categories];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    if (targetIndex < 0 || targetIndex >= newItems.length) return;
+    
+    [newItems[index], newItems[targetIndex]] = [newItems[targetIndex], newItems[index]];
+    setCategories(newItems);
+  };
+
+  const addItemRow = () => {
     setCatItems([...catItems, { id: Date.now(), name: "", price: "R$ 0,00", active: true }]);
   };
 
-  const removeItem = (id: number) => {
+  const removeItemRow = (id: number) => {
     setCatItems(catItems.filter(item => item.id !== id));
   };
 
@@ -87,7 +130,7 @@ const ComplementsPage = () => {
           <p className="text-slate-500 font-medium">Crie grupos de adicionais para seus produtos.</p>
         </div>
         {!isEditing && (
-          <Button onClick={() => setIsEditing(true)} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-12 px-6">
+          <Button onClick={() => { resetForm(); setIsEditing(true); }} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-12 px-6">
             <Plus size={18} className="mr-2" /> Novo Complemento
           </Button>
         )}
@@ -97,7 +140,9 @@ const ComplementsPage = () => {
         <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4">
           <div className="p-8 border-b border-slate-50 flex items-center gap-3">
              <Settings2 className="text-orange-500" size={20} />
-             <h3 className="font-black text-slate-900 uppercase tracking-tight">Configurar Complemento</h3>
+             <h3 className="font-black text-slate-900 uppercase tracking-tight">
+               {editingId ? "Editar Complemento" : "Configurar Novo Complemento"}
+             </h3>
           </div>
           
           <div className="p-8 space-y-8">
@@ -131,7 +176,7 @@ const ComplementsPage = () => {
                   <ListTree className="text-slate-400" size={18} />
                   <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">Opções do Grupo</h4>
                 </div>
-                <Button variant="outline" type="button" size="sm" onClick={addItem} className="rounded-lg font-bold">
+                <Button variant="outline" type="button" size="sm" onClick={addItemRow} className="rounded-lg font-bold">
                   <Plus size={14} className="mr-1" /> Adicionar Opção
                 </Button>
               </div>
@@ -140,7 +185,7 @@ const ComplementsPage = () => {
                 {catItems.map((item) => (
                   <div key={item.id} className="flex flex-col md:flex-row gap-3 items-center group">
                     <Input 
-                      placeholder="Nome da opção (ex: Maionese Caseira)" 
+                      placeholder="Nome da opção" 
                       className="rounded-xl h-12 flex-[3] font-bold" 
                       value={item.name}
                       onChange={(e) => setCatItems(catItems.map(i => i.id === item.id ? { ...i, name: e.target.value } : i))}
@@ -149,8 +194,6 @@ const ComplementsPage = () => {
                       className="rounded-xl h-12 flex-1 font-black text-center" 
                       value={item.price}
                       onChange={(e) => handlePriceChange(item.id, e.target.value)}
-                      onFocus={() => item.price === "R$ 0,00" && handlePriceChange(item.id, "")}
-                      onBlur={() => (!item.price || item.price === "R$ ") && handlePriceChange(item.id, "0")}
                     />
                     <div className="flex items-center gap-4 px-4 h-12 bg-slate-50 rounded-xl border border-slate-100">
                       <Switch checked={item.active} onCheckedChange={(val) => setCatItems(catItems.map(i => i.id === item.id ? { ...i, active: val } : i))} />
@@ -158,7 +201,7 @@ const ComplementsPage = () => {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => removeItemRow(item.id)}
                       className="rounded-xl h-12 w-12 text-red-500 hover:bg-red-50"
                     >
                       <Trash2 size={18} />
@@ -170,14 +213,14 @@ const ComplementsPage = () => {
           </div>
 
           <div className="p-8 bg-slate-50 border-t flex justify-end gap-3">
-            <Button variant="ghost" onClick={() => setIsEditing(false)} className="rounded-xl font-bold uppercase text-[10px] h-12">Cancelar</Button>
+            <Button variant="ghost" onClick={resetForm} className="rounded-xl font-bold uppercase text-[10px] h-12">Cancelar</Button>
             <Button onClick={handleSave} className="bg-slate-900 hover:bg-black text-white rounded-xl font-black uppercase tracking-widest text-[10px] h-12 px-10">
-              Salvar Complemento
+              {editingId ? "Atualizar Dados" : "Salvar Complemento"}
             </Button>
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm">
+        <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
           <div className="p-6 border-b border-slate-50 bg-slate-50/30">
             <div className="relative w-full md:w-96">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -202,7 +245,7 @@ const ComplementsPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filteredCategories.map((cat) => (
+                {filteredCategories.map((cat, idx) => (
                   <tr key={cat.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-8 py-4 font-black text-slate-900 uppercase">{cat.name}</td>
                     <td className="px-8 py-4 text-xs font-bold text-slate-500 uppercase">
@@ -210,18 +253,41 @@ const ComplementsPage = () => {
                     </td>
                     <td className="px-8 py-4 text-center font-bold text-slate-600">{cat.itemsCount}</td>
                     <td className="px-8 py-4 text-center">
-                      <Badge variant="outline" className={`border-none font-black text-[9px] uppercase px-2 py-0.5 rounded-md ${cat.status ? 'bg-slate-100 text-slate-500' : 'bg-red-50 text-red-500'}`}>
+                      <button 
+                        onClick={() => toggleStatus(cat.id)}
+                        className={`border-none font-black text-[9px] uppercase px-3 py-1 rounded-full transition-all active:scale-90
+                          ${cat.status ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-red-100 text-red-600 hover:bg-red-200'}
+                        `}
+                      >
                         {cat.status ? 'ATIVO' : 'INATIVO'}
-                      </Badge>
+                      </button>
                     </td>
                     <td className="px-8 py-4 text-right">
                       <div className="flex justify-end items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-9 w-9 bg-slate-900 text-white rounded-lg">
+                        <Button 
+                          onClick={() => handleEdit(cat)}
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-9 w-9 bg-slate-900 text-white hover:bg-black rounded-lg"
+                        >
                           <Edit2 size={14} />
                         </Button>
-                        <button className="text-slate-300 hover:text-slate-600">
-                          <GripVertical size={18} />
-                        </button>
+                        <div className="flex flex-col gap-0.5">
+                          <button 
+                            disabled={idx === 0}
+                            onClick={() => moveItem(idx, 'up')}
+                            className="text-slate-300 hover:text-orange-600 disabled:opacity-30"
+                          >
+                            <ChevronUp size={16} />
+                          </button>
+                          <button 
+                            disabled={idx === categories.length - 1}
+                            onClick={() => moveItem(idx, 'down')}
+                            className="text-slate-300 hover:text-orange-600 disabled:opacity-30"
+                          >
+                            <ChevronDown size={16} />
+                          </button>
+                        </div>
                       </div>
                     </td>
                   </tr>
