@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Star, ShieldCheck, MapPin, ArrowRight, Smartphone } from "lucide-react";
+import { ShoppingBag, Star, ShieldCheck, MapPin, ArrowRight, Smartphone, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const PublicPortal = () => {
@@ -111,7 +111,12 @@ const PublicPortal = () => {
           <div className="w-6 h-6 bg-orange-600 rounded flex items-center justify-center text-white font-bold text-xs">K</div>
           <span className="font-black text-slate-900">KIFOME.ONLINE</span>
         </div>
-        <p className="text-xs font-bold uppercase tracking-widest">© 2024 Kifome Online - Todos os direitos reservados</p>
+        <p className="text-xs font-bold uppercase tracking-widest mb-6">© 2024 Kifome Online - Todos os direitos reservados</p>
+        
+        {/* Acesso Admin Discreto */}
+        <Link to="/login" className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-300 hover:text-orange-600 transition-colors uppercase tracking-widest">
+          <Lock size={10} /> Acesso Restrito
+        </Link>
       </footer>
     </div>
   );
