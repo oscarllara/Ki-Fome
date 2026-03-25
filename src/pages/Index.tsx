@@ -45,9 +45,9 @@ const Index = () => {
               <p className="text-slate-500">Aqui está o que está acontecendo no Kifome hoje.</p>
             </div>
             <div className="flex gap-4">
-               <Link to="/delivery">
+               <Link to="/admin">
                 <Button className="bg-orange-500 hover:bg-orange-600 rounded-xl">
-                  Abrir App de Delivery
+                  Abrir Gestor de Pedidos
                 </Button>
               </Link>
               <Link to="/public">
@@ -58,7 +58,7 @@ const Index = () => {
             </div>
           </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 grid-cols-3 gap-6 mb-12">
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
               <div className="w-12 h-12 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mb-4">
                 <TrendingUp size={24} />
@@ -88,14 +88,19 @@ const Index = () => {
               Esta é a visão do seu novo painel administrativo. Navegue pelos links abaixo para ver os outros ambientes que acabei de criar para você.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link to="/public">
-                <Button variant="secondary" className="px-6 py-6 rounded-2xl font-bold">
-                  Ir para Público (/public)
+              <Link to="/admin">
+                <Button className="bg-orange-500 hover:bg-orange-600 px-6 py-6 rounded-2xl font-bold">
+                  Gestor de Pedidos (/admin)
                 </Button>
               </Link>
               <Link to="/delivery">
-                <Button className="bg-orange-500 hover:bg-orange-600 px-6 py-6 rounded-2xl font-bold">
-                  Ir para Delivery (/delivery)
+                <Button variant="secondary" className="px-6 py-6 rounded-2xl font-bold">
+                  App de Clientes (/delivery)
+                </Button>
+              </Link>
+              <Link to="/public">
+                <Button variant="outline" className="px-6 py-6 rounded-2xl font-bold border-2">
+                  Landing Page (/public)
                 </Button>
               </Link>
             </div>
