@@ -42,7 +42,6 @@ const StoresPage = () => {
   const [cashbackEnabled, setCashbackEnabled] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  // States para automação de endereço
   const [cep, setCep] = useState("");
   const [address, setAddress] = useState("");
   const [mapsLink, setMapsLink] = useState("");
@@ -57,7 +56,6 @@ const StoresPage = () => {
     setIsDialogOpen(false);
   };
 
-  // Busca CEP via API
   const handleCepBlur = async () => {
     const cleanCep = cep.replace(/\D/g, '');
     if (cleanCep.length !== 8) return;
@@ -80,7 +78,6 @@ const StoresPage = () => {
     }
   };
 
-  // Atualiza link do Maps conforme digita endereço
   const updateMapsLink = (value: string) => {
     if (!value) {
       setMapsLink("");
@@ -108,14 +105,14 @@ const StoresPage = () => {
                 <Plus size={18} className="mr-2" /> Adicionar nova loja
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-5xl max-h-[90vh] p-0 rounded-[2.5rem] overflow-hidden">
+            <DialogContent className="max-w-5xl max-h-[95vh] p-0 rounded-[2.5rem] overflow-hidden">
               <form onSubmit={handleSaveStore}>
-                <DialogHeader className="p-8 bg-slate-900 text-white">
-                  <DialogTitle className="text-2xl font-black uppercase tracking-tight">Nova Unidade Parceira</DialogTitle>
-                  <DialogDescription className="text-slate-400 font-medium">Preencha todos os detalhes para ativar a loja no sistema.</DialogDescription>
+                <DialogHeader className="px-8 py-5 bg-slate-900 text-white shrink-0">
+                  <DialogTitle className="text-xl font-black uppercase tracking-tight">Nova Unidade Parceira</DialogTitle>
+                  <DialogDescription className="text-slate-400 font-medium text-xs">Preencha todos os detalhes para ativar a loja no sistema.</DialogDescription>
                 </DialogHeader>
 
-                <ScrollArea className="h-[60vh] p-8">
+                <ScrollArea className="h-[calc(95vh-160px)] p-8">
                   <div className="space-y-10">
                     {/* Seção 1: Informações Básicas */}
                     <section className="space-y-4">
@@ -337,8 +334,8 @@ const StoresPage = () => {
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs font-black uppercase text-slate-400 ml-1">Imagem da Loja (Obrigatório)</Label>
-                        <div className="border-2 border-dashed border-slate-200 rounded-[2rem] p-12 flex flex-col items-center justify-center text-slate-400 hover:border-orange-500 hover:bg-orange-50 transition-all cursor-pointer bg-white">
-                          <ImageIcon size={40} className="mb-4 text-orange-200" />
+                        <div className="border-2 border-dashed border-slate-200 rounded-[2rem] p-8 flex flex-col items-center justify-center text-slate-400 hover:border-orange-500 hover:bg-orange-50 transition-all cursor-pointer bg-white">
+                          <ImageIcon size={32} className="mb-2 text-orange-200" />
                           <span className="text-xs font-black uppercase tracking-widest">Clique para subir imagem</span>
                           <span className="text-[10px] font-bold mt-1 uppercase text-slate-300">PNG ou JPG até 5MB</span>
                         </div>
@@ -347,7 +344,7 @@ const StoresPage = () => {
                   </div>
                 </ScrollArea>
 
-                <DialogFooter className="p-8 bg-slate-50 border-t flex flex-col sm:flex-row gap-4">
+                <DialogFooter className="px-8 py-5 bg-slate-50 border-t shrink-0 flex flex-col sm:flex-row gap-4">
                   <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-xl font-bold uppercase text-[10px] h-12 flex-1">Cancelar</Button>
                   <Button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-black uppercase tracking-widest text-[10px] h-12 flex-[2] shadow-lg shadow-orange-100 transition-all active:scale-95">
                     Cadastrar e Ativar Unidade
