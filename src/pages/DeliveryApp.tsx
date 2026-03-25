@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, ShoppingCart, Star, Clock, Filter } from "lucide-react";
+import { Search, MapPin, ShoppingCart, Star, Clock, Utensils, ShoppingBag, Store } from "lucide-react";
 
 const CATEGORIES = [
   { name: "Promoções", icon: "🏷️" },
