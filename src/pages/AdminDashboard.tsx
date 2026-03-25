@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -12,14 +13,28 @@ import {
   Clock,
   Truck,
   MoreVertical,
-  ChevronRight
+  LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import MenuEditor from "@/components/admin/MenuEditor";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("pedidos");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const auth = localStorage.getItem("admin_auth");
+    if (!auth) {
+      navigate("/login");
+    }
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("admin_auth");
+    navigate("/login");
+  };
 
   const orders = [
     { id: "#1234", customer: "João Silva", status: "Pendente", total: "R$ 45,90", items: 2, time: "5 min" },
@@ -65,11 +80,18 @@ const AdminDashboard = () => {
           </button>
         </nav>
 
-        <div className="p-4 border-t">
+        <div className="p-4 border-t space-y-4">
           <div className="bg-green-50 p-4 rounded-2xl flex items-center justify-between">
             <div className="text-xs font-bold text-green-700">LOJA ABERTA</div>
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
           </div>
+          <Button 
+            variant="ghost" 
+            className="w-full flex justify-start gap-3 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
+            onClick={handleLogout}
+          >
+            <LogOut size={20} /> Sair do Painel
+          </Button>
         </div>
       </aside>
 
@@ -104,8 +126,12 @@ const AdminDashboard = () => {
         <div className="p-8">
           <div className="flex justify-between items-end mb-8">
             <div>
-              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Gestão de Pedidos</h1>
-              <p className="text-slate-500 text-sm">Acompanhe e gerencie as entregas do dia.</p>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+                {activeTab === 'cardapio' ? 'Gestão de Cardápio' : 'Gestão de Pedidos'}
+              </h1>
+              <p className="text-slate-500 text-sm">
+                {activeTab === 'cardapio' ? 'Organize seus itens e preços.' : 'Acompanhe e gerencie as entregas do dia.'}
+              </p>
             </div>
             <div className="flex gap-2">
               <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-none px-4 py-2 rounded-lg font-bold">Hoje</Badge>
@@ -113,104 +139,107 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card className="border-none shadow-sm rounded-3xl overflow-hidden">
-              <CardContent className="p-6">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Novos</p>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-3xl font-black text-slate-900">12</h3>
-                  <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
-                    <Clock size={20} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-none shadow-sm rounded-3xl overflow-hidden">
-              <CardContent className="p-6">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Preparando</p>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-3xl font-black text-slate-900">08</h3>
-                  <div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center">
-                    <UtensilsCrossed size={20} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-none shadow-sm rounded-3xl overflow-hidden">
-              <CardContent className="p-6">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Em Entrega</p>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-3xl font-black text-slate-900">05</h3>
-                  <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center">
-                    <Truck size={20} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-none shadow-sm rounded-3xl overflow-hidden">
-              <CardContent className="p-6 bg-orange-600 text-white">
-                <p className="text-xs font-bold opacity-80 uppercase tracking-widest mb-1">Total Hoje</p>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-3xl font-black">R$ 1.240</h3>
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <CheckCircle2 size={20} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {activeTab === 'cardapio' ? (
+            <MenuEditor />
+          ) : (
+            <>
+              {/* Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <Card className="border-none shadow-sm rounded-3xl overflow-hidden">
+                  <CardContent className="p-6">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Novos</p>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-3xl font-black text-slate-900">12</h3>
+                      <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                        <Clock size={20} />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-none shadow-sm rounded-3xl overflow-hidden">
+                  <CardContent className="p-6">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Preparando</p>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-3xl font-black text-slate-900">08</h3>
+                      <div className="w-10 h-10 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center">
+                        <UtensilsCrossed size={20} />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-none shadow-sm rounded-3xl overflow-hidden">
+                  <CardContent className="p-6">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Em Entrega</p>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-3xl font-black text-slate-900">05</h3>
+                      <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center">
+                        <Truck size={20} />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-none shadow-sm rounded-3xl overflow-hidden">
+                  <CardContent className="p-6 bg-orange-600 text-white">
+                    <p className="text-xs font-bold opacity-80 uppercase tracking-widest mb-1">Total Hoje</p>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-3xl font-black">R$ 1.240</h3>
+                      <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <CheckCircle2 size={20} />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-          {/* Tabela de Pedidos */}
-          <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-            <div className="p-6 border-b border-slate-50 flex justify-between items-center">
-              <h3 className="font-bold text-slate-900">Pedidos Recentes</h3>
-              <Button variant="ghost" size="sm" className="text-orange-600 font-bold hover:text-orange-700 hover:bg-orange-50">
-                Ver histórico completo
-              </Button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-slate-50/50">
-                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Pedido</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Cliente</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Status</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Items</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Total</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Ação</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {orders.map((order) => (
-                    <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-6 py-4">
-                        <span className="font-black text-slate-900">{order.id}</span>
-                        <p className="text-[10px] text-slate-400 font-bold">há {order.time}</p>
-                      </td>
-                      <td className="px-6 py-4 font-medium text-slate-700">{order.customer}</td>
-                      <td className="px-6 py-4">
-                        <Badge className={`border-none px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter
-                          ${order.status === 'Pendente' ? 'bg-blue-100 text-blue-700' : ''}
-                          ${order.status === 'Preparando' ? 'bg-yellow-100 text-yellow-700' : ''}
-                          ${order.status === 'Entregando' ? 'bg-purple-100 text-purple-700' : ''}
-                        `}>
-                          {order.status}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 text-sm font-bold">{order.items} un.</td>
-                      <td className="px-6 py-4 text-slate-900 font-black">{order.total}</td>
-                      <td className="px-6 py-4">
-                        <Button variant="ghost" size="icon" className="rounded-xl">
-                          <MoreVertical size={18} className="text-slate-400" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+              {/* Tabela de Pedidos */}
+              <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+                <div className="p-6 border-b border-slate-50 flex justify-between items-center">
+                  <h3 className="font-bold text-slate-900">Pedidos Recentes</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-slate-50/50">
+                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Pedido</th>
+                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Cliente</th>
+                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Items</th>
+                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Total</th>
+                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {orders.map((order) => (
+                        <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="px-6 py-4">
+                            <span className="font-black text-slate-900">{order.id}</span>
+                            <p className="text-[10px] text-slate-400 font-bold">há {order.time}</p>
+                          </td>
+                          <td className="px-6 py-4 font-medium text-slate-700">{order.customer}</td>
+                          <td className="px-6 py-4">
+                            <Badge className={`border-none px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter
+                              ${order.status === 'Pendente' ? 'bg-blue-100 text-blue-700' : ''}
+                              ${order.status === 'Preparando' ? 'bg-yellow-100 text-yellow-700' : ''}
+                              ${order.status === 'Entregando' ? 'bg-purple-100 text-purple-700' : ''}
+                            `}>
+                              {order.status}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 text-slate-600 text-sm font-bold">{order.items} un.</td>
+                          <td className="px-6 py-4 text-slate-900 font-black">{order.total}</td>
+                          <td className="px-6 py-4">
+                            <Button variant="ghost" size="icon" className="rounded-xl">
+                              <MoreVertical size={18} className="text-slate-400" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </main>
     </div>
