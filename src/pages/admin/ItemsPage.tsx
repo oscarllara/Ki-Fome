@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import {
 import { 
   Plus, Search, Edit2, Save, Utensils, Store, 
   ArrowLeft, ImageIcon, Star, Flame, Diamond, Leaf, Bone, Layers, Percent, DollarSign,
-  Copy, Trash2
+  Copy, Trash2, Upload
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -86,6 +86,8 @@ const ItemsPage = () => {
   const [items, setItems] = useState(INITIAL_ITEMS);
   const [search, setSearch] = useState("");
   const [editingItem, setEditingItem] = useState<any>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Estados do Formulário
   const [name, setName] = useState("");
@@ -98,6 +100,7 @@ const ItemsPage = () => {
   const [origin, setOrigin] = useState("animal");
   const [selectedComplements, setSelectedComplements] = useState<number[]>([]);
   const [features, setFeatures] = useState({ recommended: false, popular: false, gourmet: false });
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const filteredItems = useMemo(() => {
     return items.filter(item => item.name.toLowerCase().includes(search.toLowerCase()));
@@ -131,6 +134,7 @@ const ItemsPage = () => {
     setOrigin(item.origin || "animal");
     setPromoType(item.discountType || "fixed");
     setPromoValue(item.discountValue || "");
+    setImagePreview(item.image || null);
     setView("form");
   };
 
@@ -163,12 +167,25 @@ const ItemsPage = () => {
     setOrigin("animal");
     setPromoType("fixed");
     setPromoValue("");
+    setImagePreview(null);
     setView("form");
   };
 
   const toggleStatus = (id: number) => {
     setItems(items.map(item => item.id === id ? { ...item, status: !item.status } : item));
     showSuccess("Status do item atualizado!");
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+        showSuccess("Imagem carregada com sucesso!");
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSave = (e: React.FormEvent) => {
@@ -187,7 +204,7 @@ const ItemsPage = () => {
       discountType: promoType,
       discountValue: promoValue,
       status: editingItem ? editingItem.status : true,
-      image: editingItem?.image || "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400"
+      image: imagePreview || "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400"
     };
 
     if (editingItem) {
@@ -244,17 +261,395 @@ const ItemsPage = () => {
               
               <div className="lg:col-span-2 space-y-8">
                 <section className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Imagem do Produto (Opcional)</Label>
+                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Imagem do Produto</Label>
                   <div className="flex flex-col md:flex-row gap-6 items-start">
-                    <div className="w-40 h-40 bg-slate-100 rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 overflow-hidden group hover:border-orange-400 transition-colors cursor-pointer">
-                      {editingItem?.image ? (
-                        <img src={editingItem.image} className="w-full h-full object-cover" />
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-44 h-44 bg-slate-100 rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 overflow-hidden group hover:border-orange-400 transition-all cursor-pointer relative"
+                    >
+                      {imagePreview ? (
+                        <>
+                          <img src={imagePreview} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Upload className="text-white" size={24} />
+                          </div>
+                        </>
                       ) : (
                         <>
                           <ImageIcon size={32} className="mb-2" />
-                          <span className="text-[9px] font-black uppercase tracking-tighter">Anexar Foto</span>
+                          <span className="text-[9px] font-black uppercase tracking-tighter">Clique para anexar</span>
                         </>
                       )}
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        accept="image/*" 
+                        onChange={handleImageUpload} 
+                      />
+                    </div>
+                    <div className="flex-1 space-y-4 w-full">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Nome do Produto</Label>
+                        <Input 
+                          value={name} 
+                          onChange={(e) => setName(e.target.value)} 
+                          className="rounded-2xl h-14 font-black uppercase tracking-tight text-lg" 
+                          placeholder="Ex: X-TURBO BURGUER" 
+                          required 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Descrição</Label>
+                        <Textarea 
+                          value={description} 
+                          onChange={(e) => setDescription(e.target.value)} 
+                          className="rounded-2xl min-h-[100px] font-medium" 
+                          placeholder="Ingredientes e detalhes..." 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Preço Base (R$)</Label>
+                    <Input 
+                      value={price} 
+                      onChange={(e) => setPrice(e.target.value)} 
+                      className="rounded-2xl h-14 font-black text-xl" 
+                      required 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Categoria do Menu</Label>
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger className="h-14 rounded-2xl font-black uppercase tracking-widest text-[11px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-2xl">
+think
+The previous response from the AI cut off mid-way through a `dyad-write` block for `src/pages/admin/ItemsPage.tsx`. I need to complete the file content and provide the concise summary.
+
+Looking at the previous turn, the code cut off inside the `SelectContent` tag of the `category` field.
+
+I will continue from:
+```tsx
+                      <SelectContent className="rounded-2xl">
+                        <SelectItem value="SANDUÍCHE" className="font-black uppercase text-[10px]">SANDUÍCHE</SelectItem>
+                        <SelectItem value="COMBOS" className="font-black uppercase text-[10px]">COMBOS</SelectItem>
+                        <SelectItem value="BEBIDAS" className="font-black uppercase text-[10px]">BEBIDAS</SelectItem>
+                      </SelectContent>
+```
+And then complete the rest of the component. I should make sure to include all requested features:
+- Image upload (already started, need to finish the JSX and logic if any left).
+- Form persistence for highlights (already implemented in previous turn but need to maintain it).
+- Formatters for discount (already implemented).
+- Trash icon (already implemented).
+
+Wait, the user said "não está abrindo opção de encontrar e anexar as imagens". The AI started implementing `handleImageUpload` and `fileInputRef`. I need to finish that.
+
+The cut-off was here:
+```tsx
+                      <SelectContent className="rounded-2xl">
+```
+
+I'll resume and finish the whole file.
+
+Plan:
+1. Finish the `ItemsPage.tsx` file.
+2. Provide summary.
+3. Provide chat title.<dyad-write path="src/pages/admin/ItemsPage.tsx" description="Finalizando implementação do upload de imagem e persistência de dados.">
+"use client";
+
+import { useState, useMemo, useRef } from "react";
+import AdminLayout from "@/components/admin/AdminLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
+} from "@/components/ui/select";
+import { 
+  Plus, Search, Edit2, Save, Utensils, Store, 
+  ArrowLeft, ImageIcon, Star, Flame, Diamond, Leaf, Bone, Layers, Percent, DollarSign,
+  Copy, Trash2, Upload
+} from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { showSuccess, showError } from "@/utils/toast";
+
+// Mocks para demonstração
+const MOCK_STORES = [
+  { id: 1, name: "LOJA TESTE", owner: "Helio Junio" },
+  { id: 2, name: "LOJA TESTE 2", owner: "Helio Junio" },
+  { id: 3, name: "Ki + Lanches", owner: "Helio Junio" },
+];
+
+const MOCK_COMPLEMENTS = [
+  { id: 1, name: "ADICIONAIS LANCHES" },
+  { id: 2, name: "OPÇÕES DE REFRIGERANTES" },
+  { id: 3, name: "ADICIONAIS DE BURGER" },
+];
+
+const INITIAL_ITEMS = [
+  { 
+    id: 11, 
+    name: "X-TURBO BURGUER (CÓPIA)", 
+    image: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400",
+    stores: [1, 2, 3], 
+    category: "SANDUÍCHE", 
+    price: "22.90", 
+    status: false,
+    isRecommended: true,
+    isPopular: true,
+    isGourmet: false,
+    origin: "animal",
+    discountType: "percent",
+    discountValue: "10"
+  },
+  { 
+    id: 10, 
+    name: "X-TURBO BURGUER", 
+    image: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400",
+    stores: [1, 2, 3], 
+    category: "SANDUÍCHE", 
+    price: "22.90", 
+    status: true,
+    isRecommended: true,
+    isPopular: true,
+    isGourmet: false,
+    origin: "animal",
+    discountType: "percent",
+    discountValue: "10"
+  },
+  { 
+    id: 9, 
+    name: "COMBO CASAL", 
+    image: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400",
+    stores: [1, 3], 
+    category: "COMBOS", 
+    price: "45.00", 
+    status: true,
+    isRecommended: false,
+    isPopular: false,
+    isGourmet: false,
+    origin: "animal",
+    discountType: "fixed",
+    discountValue: "0"
+  },
+];
+
+const ItemsPage = () => {
+  const [view, setView] = useState<"list" | "form">("list");
+  const [items, setItems] = useState(INITIAL_ITEMS);
+  const [search, setSearch] = useState("");
+  const [editingItem, setEditingItem] = useState<any>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Estados do Formulário
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [category, setCategory] = useState("SANDUÍCHE");
+  const [linkedStores, setLinkedStores] = useState<number[]>([]);
+  const [promoType, setPromoType] = useState<"fixed" | "percent">("fixed");
+  const [promoValue, setPromoValue] = useState("");
+  const [origin, setOrigin] = useState("animal");
+  const [selectedComplements, setSelectedComplements] = useState<number[]>([]);
+  const [features, setFeatures] = useState({ recommended: false, popular: false, gourmet: false });
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const filteredItems = useMemo(() => {
+    return items.filter(item => item.name.toLowerCase().includes(search.toLowerCase()));
+  }, [items, search]);
+
+  const calculateDiscountedPrice = (price: string, type: string, value: string) => {
+    const basePrice = parseFloat(price.replace(",", "."));
+    const cleanValue = value.replace("%", "").replace(",", ".");
+    const discValue = parseFloat(cleanValue) || 0;
+    if (discValue === 0) return basePrice;
+
+    if (type === "fixed") {
+      return Math.max(0, basePrice - discValue);
+    } else {
+      return Math.max(0, basePrice * (1 - discValue / 100));
+    }
+  };
+
+  const handleEdit = (item: any) => {
+    setEditingItem(item);
+    setName(item.name);
+    setDescription(item.description || "");
+    setPrice(item.price);
+    setCategory(item.category);
+    setLinkedStores(item.stores || []);
+    setFeatures({ 
+      recommended: item.isRecommended || false, 
+      popular: item.isPopular || false, 
+      gourmet: item.isGourmet || false 
+    });
+    setOrigin(item.origin || "animal");
+    setPromoType(item.discountType || "fixed");
+    setPromoValue(item.discountValue || "");
+    setImagePreview(item.image || null);
+    setView("form");
+  };
+
+  const handleDuplicate = (item: any) => {
+    const newItem = {
+      ...item,
+      id: Math.max(...items.map(i => i.id)) + 1,
+      name: `${item.name} (CÓPIA)`,
+      status: false
+    };
+    setItems([newItem, ...items]);
+    showSuccess(`Produto "${item.name}" duplicado com sucesso!`);
+  };
+
+  const handleDelete = (id: number) => {
+    if (window.confirm("Tem certeza que deseja excluir este produto?")) {
+      setItems(items.filter(item => item.id !== id));
+      showSuccess("Produto excluído do sistema.");
+    }
+  };
+
+  const handleAddNew = () => {
+    setEditingItem(null);
+    setName("");
+    setDescription("");
+    setPrice("");
+    setCategory("SANDUÍCHE");
+    setLinkedStores([]);
+    setFeatures({ recommended: false, popular: false, gourmet: false });
+    setOrigin("animal");
+    setPromoType("fixed");
+    setPromoValue("");
+    setImagePreview(null);
+    setView("form");
+  };
+
+  const toggleStatus = (id: number) => {
+    setItems(items.map(item => item.id === id ? { ...item, status: !item.status } : item));
+    showSuccess("Status do item atualizado!");
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+        showSuccess("Imagem carregada com sucesso!");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const updatedData = {
+      name: name.toUpperCase(),
+      description,
+      price: price.replace(",", "."),
+      category,
+      stores: linkedStores,
+      isRecommended: features.recommended,
+      isPopular: features.popular,
+      isGourmet: features.gourmet,
+      origin,
+      discountType: promoType,
+      discountValue: promoValue,
+      status: editingItem ? editingItem.status : true,
+      image: imagePreview || "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400"
+    };
+
+    if (editingItem) {
+      setItems(items.map(item => item.id === editingItem.id ? { ...item, ...updatedData } : item));
+      showSuccess("Item atualizado com sucesso!");
+    } else {
+      const newItem = {
+        id: items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1,
+        ...updatedData
+      };
+      setItems([newItem, ...items]);
+      showSuccess("Novo item cadastrado!");
+    }
+    
+    setView("list");
+  };
+
+  const formatDiscountOnBlur = () => {
+    if (!promoValue) return;
+
+    if (promoType === "fixed") {
+      const numeric = parseFloat(promoValue.replace(",", "."));
+      if (!isNaN(numeric)) {
+        setPromoValue(numeric.toFixed(2).replace(".", ","));
+      }
+    } else {
+      let numericString = promoValue.replace("%", "").replace(",", ".");
+      const numeric = parseFloat(numericString);
+      if (!isNaN(numeric)) {
+        setPromoValue(numeric.toString().replace(".", ",") + "%");
+      }
+    }
+  };
+
+  if (view === "form") {
+    return (
+      <AdminLayout>
+        <button onClick={() => setView("list")} className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 hover:text-orange-600 transition-colors">
+          <ArrowLeft size={14} /> Voltar para lista
+        </button>
+
+        <form onSubmit={handleSave} className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden mb-20">
+          <div className="p-10 border-b border-slate-50 bg-slate-50/30 flex items-center gap-4">
+             <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 shadow-inner">
+               <Utensils size={24} />
+             </div>
+             <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+               {editingItem ? `EDITANDO: ${editingItem.name}` : "CADASTRAR NOVO PRODUTO"}
+             </h3>
+          </div>
+
+          <div className="p-10 space-y-12">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+              
+              <div className="lg:col-span-2 space-y-8">
+                <section className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Imagem do Produto</Label>
+                  <div className="flex flex-col md:flex-row gap-6 items-start">
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-44 h-44 bg-slate-100 rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 overflow-hidden group hover:border-orange-400 transition-all cursor-pointer relative"
+                    >
+                      {imagePreview ? (
+                        <>
+                          <img src={imagePreview} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Upload className="text-white" size={24} />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon size={32} className="mb-2" />
+                          <span className="text-[9px] font-black uppercase tracking-tighter">Clique para anexar</span>
+                        </>
+                      )}
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        accept="image/*" 
+                        onChange={handleImageUpload} 
+                      />
                     </div>
                     <div className="flex-1 space-y-4 w-full">
                       <div className="space-y-2">
@@ -337,7 +732,7 @@ const ItemsPage = () => {
                         onChange={(e) => setPromoValue(e.target.value)}
                         onBlur={formatDiscountOnBlur}
                         className="rounded-xl h-12 bg-white border-orange-100 font-black" 
-                        placeholder={promoType === 'fixed' ? "0.00" : "x%"} 
+                        placeholder={promoType === 'fixed' ? "0,00" : "x%"} 
                       />
                     </div>
                   </div>
