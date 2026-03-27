@@ -14,11 +14,11 @@ import {
 import { 
   Plus, Search, Edit2, Save, Utensils, Store, 
   ArrowLeft, ImageIcon, Star, Flame, Diamond, Leaf, Bone, Layers, Percent, DollarSign,
-  Copy
+  Copy, Trash2
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { showSuccess } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
 
 // Mocks para demonstração
 const MOCK_STORES = [
@@ -34,6 +34,21 @@ const MOCK_COMPLEMENTS = [
 ];
 
 const INITIAL_ITEMS = [
+  { 
+    id: 11, 
+    name: "X-TURBO BURGUER (CÓPIA)", 
+    image: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400",
+    stores: [1, 2, 3], 
+    category: "SANDUÍCHE", 
+    price: "22.90", 
+    status: false,
+    isRecommended: true,
+    isPopular: true,
+    isGourmet: false,
+    origin: "animal",
+    discountType: "percent",
+    discountValue: "10"
+  },
   { 
     id: 10, 
     name: "X-TURBO BURGUER", 
@@ -87,7 +102,9 @@ const ItemsPage = () => {
 
   const calculateDiscountedPrice = (price: string, type: string, value: string) => {
     const basePrice = parseFloat(price);
-    const discValue = parseFloat(value) || 0;
+    // Remove formatting to calculate
+    const cleanValue = value.replace("%", "").replace(",", ".");
+    const discValue = parseFloat(cleanValue) || 0;
     if (discValue === 0) return basePrice;
 
     if (type === "fixed") {
@@ -122,6 +139,13 @@ const ItemsPage = () => {
     showSuccess(`Produto "${item.name}" duplicado com sucesso!`);
   };
 
+  const handleDelete = (id: number) => {
+    if (window.confirm("Tem certeza que deseja excluir este produto?")) {
+      setItems(items.filter(item => item.id !== id));
+      showSuccess("Produto excluído do sistema.");
+    }
+  };
+
   const handleAddNew = () => {
     setEditingItem(null);
     setLinkedStores([]);
@@ -141,6 +165,25 @@ const ItemsPage = () => {
     e.preventDefault();
     showSuccess(editingItem ? "Item atualizado com sucesso!" : "Novo item cadastrado!");
     setView("list");
+  };
+
+  // Formatação de Desconto
+  const formatDiscountOnBlur = () => {
+    if (!promoValue) return;
+
+    if (promoType === "fixed") {
+      const numeric = parseFloat(promoValue.replace(",", "."));
+      if (!isNaN(numeric)) {
+        setPromoValue(numeric.toFixed(2).replace(".", ","));
+      }
+    } else {
+      let numericString = promoValue.replace("%", "").replace(",", ".");
+      const numeric = parseFloat(numericString);
+      if (!isNaN(numeric)) {
+        // Aceita decimais e anexa %
+        setPromoValue(numeric.toString().replace(".", ",") + "%");
+      }
+    }
   };
 
   if (view === "form") {
@@ -221,14 +264,14 @@ const ItemsPage = () => {
                       <div className="flex bg-white rounded-xl p-1 border border-orange-100">
                         <button 
                           type="button"
-                          onClick={() => setPromoType("fixed")}
+                          onClick={() => { setPromoType("fixed"); setPromoValue(""); }}
                           className={`flex-1 h-10 rounded-lg flex items-center justify-center gap-2 text-[10px] font-black transition-all ${promoType === 'fixed' ? 'bg-orange-600 text-white shadow-lg shadow-orange-200' : 'text-orange-400'}`}
                         >
                           <DollarSign size={14} /> VALOR EM R$
                         </button>
                         <button 
                           type="button"
-                          onClick={() => setPromoType("percent")}
+                          onClick={() => { setPromoType("percent"); setPromoValue(""); }}
                           className={`flex-1 h-10 rounded-lg flex items-center justify-center gap-2 text-[10px] font-black transition-all ${promoType === 'percent' ? 'bg-orange-600 text-white shadow-lg shadow-orange-200' : 'text-orange-400'}`}
                         >
                           <Percent size={14} /> PORCENTAGEM %
@@ -240,8 +283,9 @@ const ItemsPage = () => {
                       <Input 
                         value={promoValue}
                         onChange={(e) => setPromoValue(e.target.value)}
+                        onBlur={formatDiscountOnBlur}
                         className="rounded-xl h-12 bg-white border-orange-100 font-black" 
-                        placeholder={promoType === 'fixed' ? "0.00" : "x%"} 
+                        placeholder={promoType === 'fixed' ? "0,00" : "x%"} 
                       />
                     </div>
                   </div>
@@ -492,6 +536,14 @@ const ItemsPage = () => {
                           className="h-12 w-12 bg-slate-900 text-white hover:bg-black rounded-2xl shadow-lg shadow-slate-200"
                         >
                           <Edit2 size={18} />
+                        </Button>
+                        <Button 
+                          onClick={() => handleDelete(item.id)}
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-12 w-12 bg-slate-50 text-slate-300 hover:bg-red-600 hover:text-white rounded-2xl transition-all"
+                        >
+                          <Trash2 size={18} />
                         </Button>
                       </div>
                     </td>
