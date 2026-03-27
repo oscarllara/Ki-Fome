@@ -88,7 +88,10 @@ const ItemsPage = () => {
   const [editingItem, setEditingItem] = useState<any>(null);
 
   // Estados do Formulário
-  const [selectedOwner] = useState("Helio Junio");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [category, setCategory] = useState("SANDUÍCHE");
   const [linkedStores, setLinkedStores] = useState<number[]>([]);
   const [promoType, setPromoType] = useState<"fixed" | "percent">("fixed");
   const [promoValue, setPromoValue] = useState("");
@@ -101,8 +104,7 @@ const ItemsPage = () => {
   }, [items, search]);
 
   const calculateDiscountedPrice = (price: string, type: string, value: string) => {
-    const basePrice = parseFloat(price);
-    // Remove formatting to calculate
+    const basePrice = parseFloat(price.replace(",", "."));
     const cleanValue = value.replace("%", "").replace(",", ".");
     const discValue = parseFloat(cleanValue) || 0;
     if (discValue === 0) return basePrice;
@@ -116,6 +118,10 @@ const ItemsPage = () => {
 
   const handleEdit = (item: any) => {
     setEditingItem(item);
+    setName(item.name);
+    setDescription(item.description || "");
+    setPrice(item.price);
+    setCategory(item.category);
     setLinkedStores(item.stores || []);
     setFeatures({ 
       recommended: item.isRecommended || false, 
@@ -148,6 +154,10 @@ const ItemsPage = () => {
 
   const handleAddNew = () => {
     setEditingItem(null);
+    setName("");
+    setDescription("");
+    setPrice("");
+    setCategory("SANDUÍCHE");
     setLinkedStores([]);
     setFeatures({ recommended: false, popular: false, gourmet: false });
     setOrigin("animal");
@@ -163,11 +173,38 @@ const ItemsPage = () => {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    showSuccess(editingItem ? "Item atualizado com sucesso!" : "Novo item cadastrado!");
+    
+    const updatedData = {
+      name: name.toUpperCase(),
+      description,
+      price: price.replace(",", "."),
+      category,
+      stores: linkedStores,
+      isRecommended: features.recommended,
+      isPopular: features.popular,
+      isGourmet: features.gourmet,
+      origin,
+      discountType: promoType,
+      discountValue: promoValue,
+      status: editingItem ? editingItem.status : true,
+      image: editingItem?.image || "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400"
+    };
+
+    if (editingItem) {
+      setItems(items.map(item => item.id === editingItem.id ? { ...item, ...updatedData } : item));
+      showSuccess("Item atualizado com sucesso!");
+    } else {
+      const newItem = {
+        id: items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1,
+        ...updatedData
+      };
+      setItems([newItem, ...items]);
+      showSuccess("Novo item cadastrado!");
+    }
+    
     setView("list");
   };
 
-  // Formatação de Desconto
   const formatDiscountOnBlur = () => {
     if (!promoValue) return;
 
@@ -180,7 +217,6 @@ const ItemsPage = () => {
       let numericString = promoValue.replace("%", "").replace(",", ".");
       const numeric = parseFloat(numericString);
       if (!isNaN(numeric)) {
-        // Aceita decimais e anexa %
         setPromoValue(numeric.toString().replace(".", ",") + "%");
       }
     }
@@ -223,11 +259,22 @@ const ItemsPage = () => {
                     <div className="flex-1 space-y-4 w-full">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Nome do Produto</Label>
-                        <Input defaultValue={editingItem?.name} className="rounded-2xl h-14 font-black uppercase tracking-tight text-lg" placeholder="Ex: X-TURBO BURGUER" required />
+                        <Input 
+                          value={name} 
+                          onChange={(e) => setName(e.target.value)} 
+                          className="rounded-2xl h-14 font-black uppercase tracking-tight text-lg" 
+                          placeholder="Ex: X-TURBO BURGUER" 
+                          required 
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Descrição</Label>
-                        <Textarea className="rounded-2xl min-h-[100px] font-medium" placeholder="Ingredientes e detalhes..." />
+                        <Textarea 
+                          value={description} 
+                          onChange={(e) => setDescription(e.target.value)} 
+                          className="rounded-2xl min-h-[100px] font-medium" 
+                          placeholder="Ingredientes e detalhes..." 
+                        />
                       </div>
                     </div>
                   </div>
@@ -236,11 +283,16 @@ const ItemsPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Preço Base (R$)</Label>
-                    <Input defaultValue={editingItem?.price} className="rounded-2xl h-14 font-black text-xl" required />
+                    <Input 
+                      value={price} 
+                      onChange={(e) => setPrice(e.target.value)} 
+                      className="rounded-2xl h-14 font-black text-xl" 
+                      required 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Categoria do Menu</Label>
-                    <Select defaultValue={editingItem?.category || "SANDUÍCHE"}>
+                    <Select value={category} onValueChange={setCategory}>
                       <SelectTrigger className="h-14 rounded-2xl font-black uppercase tracking-widest text-[11px]">
                         <SelectValue />
                       </SelectTrigger>
@@ -285,7 +337,7 @@ const ItemsPage = () => {
                         onChange={(e) => setPromoValue(e.target.value)}
                         onBlur={formatDiscountOnBlur}
                         className="rounded-xl h-12 bg-white border-orange-100 font-black" 
-                        placeholder={promoType === 'fixed' ? "0,00" : "x%"} 
+                        placeholder={promoType === 'fixed' ? "0.00" : "x%"} 
                       />
                     </div>
                   </div>
@@ -361,10 +413,6 @@ const ItemsPage = () => {
                     <Store className="text-orange-500" size={18} />
                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Lojas Vinculadas</Label>
                   </div>
-                  <div className="flex flex-col gap-1 mb-4">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Gestor Master:</span>
-                    <span className="font-black text-slate-900 text-sm">{selectedOwner}</span>
-                  </div>
                   <div className="space-y-3">
                     {MOCK_STORES.map(store => (
                       <div key={store.id} className="flex items-center space-x-3 bg-white p-4 rounded-2xl border border-slate-200/50 shadow-sm group hover:border-orange-200 transition-all">
@@ -378,30 +426,6 @@ const ItemsPage = () => {
                         />
                         <label htmlFor={`store-${store.id}`} className="text-xs font-black text-slate-700 cursor-pointer uppercase tracking-tight flex-1">
                           {store.name}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-
-                <section className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Plus className="text-emerald-500" size={18} />
-                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Anexar Complementos</Label>
-                  </div>
-                  <div className="space-y-3">
-                    {MOCK_COMPLEMENTS.map(comp => (
-                      <div key={comp.id} className="flex items-center space-x-3 bg-white p-4 rounded-2xl border border-slate-200/50 shadow-sm group hover:border-emerald-200 transition-all">
-                        <Checkbox 
-                          id={`comp-${comp.id}`}
-                          checked={selectedComplements.includes(comp.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) setSelectedComplements([...selectedComplements, comp.id]);
-                            else setSelectedComplements(selectedComplements.filter(id => id !== comp.id));
-                          }}
-                        />
-                        <label htmlFor={`comp-${comp.id}`} className="text-xs font-black text-slate-700 cursor-pointer uppercase tracking-tight flex-1">
-                          {comp.name}
                         </label>
                       </div>
                     ))}
@@ -465,7 +489,7 @@ const ItemsPage = () => {
             <tbody className="divide-y divide-slate-50">
               {filteredItems.map((item) => {
                 const discountedPrice = calculateDiscountedPrice(item.price, item.discountType || 'fixed', item.discountValue || '0');
-                const hasDiscount = discountedPrice < parseFloat(item.price);
+                const hasDiscount = discountedPrice < parseFloat(item.price.replace(",", "."));
 
                 return (
                   <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
@@ -501,11 +525,11 @@ const ItemsPage = () => {
                       <div className="flex flex-col">
                         {hasDiscount ? (
                           <>
-                            <span className="text-[10px] font-bold text-slate-400 line-through">R$ {parseFloat(item.price).toFixed(2)}</span>
+                            <span className="text-[10px] font-bold text-slate-400 line-through">R$ {parseFloat(item.price.replace(",", ".")).toFixed(2)}</span>
                             <span className="font-black text-orange-600">R$ {discountedPrice.toFixed(2)}</span>
                           </>
                         ) : (
-                          <span className="font-black text-slate-900">R$ {parseFloat(item.price).toFixed(2)}</span>
+                          <span className="font-black text-slate-900">R$ {parseFloat(item.price.replace(",", ".")).toFixed(2)}</span>
                         )}
                       </div>
                     </td>
