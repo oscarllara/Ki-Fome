@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { 
   User, Shield, Wallet, History, ShoppingBag, MapPin, 
   ArrowLeft, RefreshCcw, ExternalLink, Plus, MapPinned,
-  ArrowUpCircle, ArrowDownCircle, Trash2, Edit2
+  ArrowUpCircle, ArrowDownCircle, Trash2, Edit2, CheckCircle2
 } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import {
@@ -32,29 +32,49 @@ const UserDetailsPage = () => {
   const [walletAmount, setWalletAmount] = useState("R$ 0,00");
   const [walletOperation, setWalletOperation] = useState<"add" | "subtract">("add");
   const [walletDescription, setWalletDescription] = useState("");
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   // Endereços
-  const [addresses, setAddresses] = useState<any[]>([
-    { id: 1, zip: "37200-000", street: "Rua Central", number: "500", neighborhood: "Centro", city: "Lavras", state: "MG", isDefault: true }
-  ]);
+  const [addresses, setAddresses] = useState<any[]>([]);
   const [isAddressOpen, setIsAddressOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [addressFormData, setAddressFormData] = useState({ zip: "", street: "", number: "", neighborhood: "", city: "", state: "" });
 
   useEffect(() => {
     const savedUsers = localStorage.getItem("kifome_users");
+    const savedTransactions = localStorage.getItem(`kifome_trans_${id}`);
+    const savedAddresses = localStorage.getItem(`kifome_addr_${id}`);
+    
     if (savedUsers) {
       const parsed = JSON.parse(savedUsers);
       setUsers(parsed);
       const found = parsed.find((u: any) => u.id === Number(id));
-      setUser(found || parsed[0]);
+      if (found) {
+        setUser(found);
+      } else {
+        navigate("/admin/users/all");
+      }
     }
-  }, [id]);
+
+    if (savedTransactions) setTransactions(JSON.parse(savedTransactions));
+    if (savedAddresses) {
+      setAddresses(JSON.parse(savedAddresses));
+    } else {
+      const initialAddr = [{ id: 1, zip: "37200-000", street: "Rua Central", number: "500", neighborhood: "Centro", city: "Lavras", state: "MG", isDefault: true }];
+      setAddresses(initialAddr);
+      localStorage.setItem(`kifome_addr_${id}`, JSON.stringify(initialAddr));
+    }
+  }, [id, navigate]);
 
   const saveToLocal = (updatedUser: any) => {
     const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
     setUsers(updatedUsers);
     localStorage.setItem("kifome_users", JSON.stringify(updatedUsers));
+  };
+
+  const handleSaveProfile = () => {
+    saveToLocal(user);
+    showSuccess("Alterações no perfil salvas com sucesso!");
   };
 
   const handleCEPChange = async (val: string) => {
@@ -79,20 +99,23 @@ const UserDetailsPage = () => {
 
   const handleSaveAddress = (e: React.FormEvent) => {
     e.preventDefault();
+    let newAddresses;
     if (editingAddress) {
-      setAddresses(addresses.map(a => a.id === editingAddress.id ? { ...addressFormData, id: a.id, isDefault: a.isDefault } : a));
-      showSuccess("Endereço atualizado!");
+      newAddresses = addresses.map(a => a.id === editingAddress.id ? { ...addressFormData, id: a.id, isDefault: a.isDefault } : a);
     } else {
-      setAddresses([...addresses, { ...addressFormData, id: Date.now(), isDefault: false }]);
-      showSuccess("Endereço adicionado!");
+      newAddresses = [...addresses, { ...addressFormData, id: Date.now(), isDefault: false }];
     }
+    setAddresses(newAddresses);
+    localStorage.setItem(`kifome_addr_${id}`, JSON.stringify(newAddresses));
+    showSuccess(editingAddress ? "Endereço atualizado!" : "Endereço adicionado!");
     setIsAddressOpen(false);
     setEditingAddress(null);
-    setAddressFormData({ zip: "", street: "", number: "", neighborhood: "", city: "", state: "" });
   };
 
   const removeAddress = (addrId: number) => {
-    setAddresses(addresses.filter(a => a.id !== addrId));
+    const newAddresses = addresses.filter(a => a.id !== addrId);
+    setAddresses(newAddresses);
+    localStorage.setItem(`kifome_addr_${id}`, JSON.stringify(newAddresses));
     showSuccess("Endereço removido.");
   };
 
@@ -103,22 +126,29 @@ const UserDetailsPage = () => {
 
     const newWallet = walletOperation === "add" ? user.wallet + numericValue : Math.max(0, user.wallet - numericValue);
     const updatedUser = { ...user, wallet: newWallet };
-    setUser(updatedUser);
-    saveToLocal(updatedUser);
-    showSuccess(`Saldo ${walletOperation === 'add' ? 'adicionado' : 'abatido'}!`);
-    setWalletAmount("R$ 0,00");
-  };
+    
+    // Log transação
+    const newTrans = {
+      id: Date.now(),
+      type: walletOperation === "add" ? "CRÉDITO" : "DÉBITO",
+      amount: numericValue,
+      description: walletDescription || (walletOperation === "add" ? "Adição manual" : "Abatimento manual"),
+      date: new Date().toLocaleDateString("pt-BR")
+    };
+    const updatedTrans = [newTrans, ...transactions];
+    setTransactions(updatedTrans);
+    localStorage.setItem(`kifome_trans_${id}`, JSON.stringify(updatedTrans));
 
-  const updateRole = (newRole: string) => {
-    const updatedUser = { ...user, role: newRole };
     setUser(updatedUser);
     saveToLocal(updatedUser);
-    showSuccess("Função atualizada!");
+    showSuccess(`Saldo atualizado!`);
+    setWalletAmount("R$ 0,00");
+    setWalletDescription("");
   };
 
   const tabs = [
     { id: "detalhes", label: "Dados Pessoais", icon: <User size={18} /> },
-    { id: "funcao", label: "Funções & Zonas", icon: <Shield size={18} /> },
+    { id: "funcao", label: "Funções", icon: <Shield size={18} /> },
     { id: "saldo", label: "Carteira (Saldo)", icon: <Wallet size={18} /> },
     { id: "transacoes", label: "Histórico Financeiro", icon: <History size={18} /> },
     { id: "pedidos", label: "Pedidos realizados", icon: <ShoppingBag size={18} /> },
@@ -156,29 +186,41 @@ const UserDetailsPage = () => {
                 <div className="space-y-8">
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-4">Dados Básicos</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2"><Label className="text-xs font-black uppercase text-slate-400">Nome</Label><Input defaultValue={user.name} className="h-12 rounded-xl" /></div>
-                    <div className="space-y-2"><Label className="text-xs font-black uppercase text-slate-400">E-mail</Label><Input defaultValue={user.email} className="h-12 rounded-xl" /></div>
-                    <div className="space-y-2"><Label className="text-xs font-black uppercase text-slate-400">WhatsApp</Label><Input defaultValue={user.phone} className="h-12 rounded-xl" /></div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase text-slate-400">Nome</Label>
+                      <Input value={user.name} onChange={(e) => setUser({...user, name: e.target.value})} className="h-12 rounded-xl font-bold" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase text-slate-400">E-mail</Label>
+                      <Input value={user.email} onChange={(e) => setUser({...user, email: e.target.value})} className="h-12 rounded-xl font-bold" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase text-slate-400">WhatsApp</Label>
+                      <Input value={user.phone} onChange={(e) => setUser({...user, phone: e.target.value})} className="h-12 rounded-xl font-bold" />
+                    </div>
                   </div>
-                  <div className="flex justify-end pt-4"><Button onClick={() => showSuccess("Perfil salvo!")} className="bg-emerald-500 text-white rounded-xl h-12 px-8 font-black uppercase text-[10px]">Salvar Alterações</Button></div>
+                  <div className="flex justify-end pt-4">
+                    <Button onClick={handleSaveProfile} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl h-12 px-8 font-black uppercase text-[10px] shadow-lg shadow-emerald-100 transition-all active:scale-95">
+                      <CheckCircle2 size={16} className="mr-2" /> Salvar Alterações
+                    </Button>
+                  </div>
                 </div>
               )}
 
               {activeTab === "funcao" && (
                 <div className="space-y-8">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-4">Gerenciar Funções</h3>
-                  <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex items-center justify-between">
-                    <div className="flex gap-2">
-                      <Badge className="bg-emerald-500 text-white rounded-lg px-3 py-1 font-black text-[10px] uppercase">Cliente</Badge>
-                      {user.role !== "Cliente" && <Badge className="bg-orange-500 text-white rounded-lg px-3 py-1 font-black text-[10px] uppercase">{user.role}</Badge>}
-                    </div>
-                  </div>
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-4">Atribuir Funções</h3>
                   <div className="max-w-md space-y-4">
-                    <Label className="text-sm font-black text-slate-600">Atribuir Nova Função:</Label>
-                    <Select value={user.role} onValueChange={updateRole}>
+                    <Label className="text-sm font-black text-slate-600">Função Principal:</Label>
+                    <Select value={user.role} onValueChange={(val) => {
+                      const updated = {...user, role: val};
+                      setUser(updated);
+                      saveToLocal(updated);
+                      showSuccess("Função atualizada!");
+                    }}>
                       <SelectTrigger className="h-14 rounded-2xl font-black uppercase text-[10px]"><SelectValue /></SelectTrigger>
                       <SelectContent className="rounded-2xl">
-                        <SelectItem value="Cliente" className="font-bold">Apenas Cliente</SelectItem>
+                        <SelectItem value="Cliente" className="font-bold">Cliente</SelectItem>
                         <SelectItem value="Parceiro" className="font-bold">Parceiro</SelectItem>
                         <SelectItem value="Proprietário" className="font-bold">Proprietário de Loja</SelectItem>
                         <SelectItem value="Entregador" className="font-bold">Entregador</SelectItem>
@@ -206,9 +248,54 @@ const UserDetailsPage = () => {
                         <button onClick={() => setWalletOperation("add")} className={`flex-1 h-14 rounded-2xl border-2 font-black uppercase text-[10px] ${walletOperation === 'add' ? 'bg-emerald-50 border-emerald-500 text-emerald-600' : 'bg-white text-slate-400'}`}><ArrowUpCircle size={18} className="inline mr-2" /> Adicionar</button>
                         <button onClick={() => setWalletOperation("subtract")} className={`flex-1 h-14 rounded-2xl border-2 font-black uppercase text-[10px] ${walletOperation === 'subtract' ? 'bg-red-50 border-red-500 text-red-600' : 'bg-white text-slate-400'}`}><ArrowDownCircle size={18} className="inline mr-2" /> Abater</button>
                       </div>
-                      <Input value={walletAmount} onChange={(e) => setWalletAmount(e.target.value.replace(/\D/g, "").replace(/(\d+)(\d{2})$/, "R$ $1,$2"))} onClick={() => setWalletAmount("R$ 0,00")} className="h-14 rounded-2xl font-black text-xl text-center" />
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Valor</Label>
+                        <Input value={walletAmount} onChange={(e) => setWalletAmount(e.target.value.replace(/\D/g, "").replace(/(\d+)(\d{2})$/, "R$ $1,$2"))} onClick={() => setWalletAmount("R$ 0,00")} className="h-14 rounded-2xl font-black text-xl text-center" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Motivo da movimentação</Label>
+                        <Input value={walletDescription} onChange={(e) => setWalletDescription(e.target.value)} placeholder="Ex: Estorno de pedido cancelado" className="h-12 rounded-xl font-bold" />
+                      </div>
                       <Button onClick={handleWalletUpdate} className={`w-full h-14 rounded-2xl font-black uppercase text-[11px] ${walletOperation === 'add' ? 'bg-emerald-500' : 'bg-red-600'}`}>Confirmar Movimentação</Button>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "transacoes" && (
+                <div className="space-y-6">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-4">Histórico de Transações</h3>
+                  {transactions.length > 0 ? (
+                    <div className="space-y-3">
+                      {transactions.map(t => (
+                        <div key={t.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${t.type === 'CRÉDITO' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                              {t.type === 'CRÉDITO' ? <Plus size={20} /> : <Trash2 size={20} />}
+                            </div>
+                            <div>
+                              <p className="text-xs font-black text-slate-900 uppercase">{t.description}</p>
+                              <p className="text-[10px] text-slate-400 font-bold">{t.date}</p>
+                            </div>
+                          </div>
+                          <span className={`font-black ${t.type === 'CRÉDITO' ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {t.type === 'CRÉDITO' ? '+' : '-'} {t.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 text-sm italic py-10 text-center">Nenhuma movimentação registrada.</p>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "pedidos" && (
+                <div className="space-y-6">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-4">Pedidos do Cliente</h3>
+                  <div className="flex flex-col items-center justify-center py-10 opacity-40">
+                    <ShoppingBag size={48} className="text-slate-300 mb-4" />
+                    <p className="text-xs font-black text-slate-400 uppercase">Sincronizando com App de Delivery...</p>
                   </div>
                 </div>
               )}

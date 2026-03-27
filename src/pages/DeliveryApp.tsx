@@ -1,9 +1,17 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, ShoppingCart, Utensils, ShoppingBag, User, Bell } from "lucide-react";
+import { Search, MapPin, ShoppingCart, Utensils, ShoppingBag, User, Bell, CheckCircle2 } from "lucide-react";
 import RestaurantCard from "@/components/RestaurantCard";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const CATEGORIES = [
   { name: "Promo", icon: "🔥", color: "bg-orange-50" },
@@ -33,38 +41,39 @@ const RESTAURANTS = [
     category: "Pizza",
     priceRange: "$$$",
     isPromo: false
-  },
-  {
-    name: "Sushiman Premium",
-    image: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&q=80&w=400",
-    rating: 4.7,
-    time: "40-60 min",
-    category: "Japonesa",
-    priceRange: "$$$",
-    isPromo: true
-  },
-  {
-    name: "Açaí do Porto",
-    image: "https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&q=80&w=400",
-    rating: 4.6,
-    time: "15-25 min",
-    category: "Sobremesas",
-    priceRange: "$",
-    isPromo: false
   }
 ];
 
 const DeliveryApp = () => {
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<any>(null);
+
+  useEffect(() => {
+    // Simulando usuário logado (ex: id 233 de Felipe Denis)
+    const savedAddr = localStorage.getItem("kifome_addr_233");
+    if (savedAddr) {
+      const parsed = JSON.parse(savedAddr);
+      setAddresses(parsed);
+      setSelectedAddress(parsed.find((a: any) => a.isDefault) || parsed[0]);
+    } else {
+      const defaultAddr = { street: "Rua Central", number: "500", neighborhood: "Centro" };
+      setSelectedAddress(defaultAddr);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#FDFDFD] pb-24 font-sans">
       {/* Top Header */}
       <header className="bg-white px-6 pt-8 pb-6 sticky top-0 z-50 shadow-sm border-b border-slate-50">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex flex-col">
+          <div className="flex flex-col cursor-pointer" onClick={() => setIsAddressModalOpen(true)}>
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Entregar em</span>
             <div className="flex items-center gap-1">
               <MapPin className="text-orange-600" size={16} />
-              <span className="font-black text-sm text-slate-900">Rua Central, 500</span>
+              <span className="font-black text-sm text-slate-900">
+                {selectedAddress ? `${selectedAddress.street}, ${selectedAddress.number}` : "Selecione um endereço"}
+              </span>
             </div>
           </div>
           <div className="flex gap-2">
@@ -118,6 +127,41 @@ const DeliveryApp = () => {
           ))}
         </div>
       </section>
+
+      {/* MODAL DE ENDEREÇOS */}
+      <Dialog open={isAddressModalOpen} onOpenChange={setIsAddressModalOpen}>
+        <DialogContent className="max-w-md rounded-[2.5rem] p-8">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black uppercase tracking-tight">Meus Endereços</DialogTitle>
+            <DialogDescription className="text-xs font-bold text-slate-400 uppercase">Escolha onde deseja receber seu pedido</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-6">
+            {addresses.map((addr) => (
+              <button 
+                key={addr.id}
+                onClick={() => { setSelectedAddress(addr); setIsAddressModalOpen(false); }}
+                className={`w-full p-6 rounded-3xl border text-left flex items-center justify-between transition-all active:scale-95
+                  ${selectedAddress?.id === addr.id ? 'bg-orange-50 border-orange-500 shadow-lg shadow-orange-100' : 'bg-slate-50 border-slate-100'}
+                `}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedAddress?.id === addr.id ? 'bg-orange-500 text-white' : 'bg-white text-slate-400'}`}>
+                    <MapPin size={20} />
+                  </div>
+                  <div>
+                    <p className="font-black text-slate-900 uppercase text-xs">{addr.street}, {addr.number}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">{addr.neighborhood} - {addr.city}</p>
+                  </div>
+                </div>
+                {selectedAddress?.id === addr.id && <CheckCircle2 size={20} className="text-orange-500" />}
+              </button>
+            ))}
+          </div>
+          <Button className="w-full mt-6 h-14 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-widest text-[10px]">
+            <Plus size={16} className="mr-2" /> Adicionar Novo Endereço
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {/* Bottom Tab Bar */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 px-10 py-4 flex justify-between items-center z-50">
