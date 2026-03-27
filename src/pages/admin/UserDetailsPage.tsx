@@ -13,6 +13,13 @@ import {
   ArrowLeft, Lock, Trash2, Plus, Search, ExternalLink, RefreshCcw
 } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const UserDetailsPage = () => {
   const { id } = useParams();
@@ -48,7 +55,6 @@ const UserDetailsPage = () => {
         showError("CEP não encontrado.");
       } else {
         showSuccess("Endereço localizado!");
-        // Aqui atualizaria o estado do endereço
       }
     } catch (err) {
       showError("Erro ao buscar CEP.");
@@ -72,7 +78,6 @@ const UserDetailsPage = () => {
       </header>
 
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Sidebar de Navegação das Abas */}
         <aside className="w-full lg:w-72 shrink-0">
           <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden sticky top-28">
             {tabs.map((tab) => (
@@ -91,7 +96,6 @@ const UserDetailsPage = () => {
           </div>
         </aside>
 
-        {/* Área de Conteúdo */}
         <div className="flex-1 space-y-8">
           <Card className="border-none shadow-sm rounded-[2.5rem] overflow-hidden">
             <CardContent className="p-10">
@@ -146,12 +150,13 @@ const UserDetailsPage = () => {
                     </div>
                     <div className="max-w-md space-y-2">
                       <Label className="text-sm font-bold text-slate-600">Atribuir Função:</Label>
-                      <Select>
+                      <Select defaultValue={userData.role}>
                         <SelectTrigger className="h-12 rounded-xl">
                           <SelectValue placeholder="Selecione uma nova função..." />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
                           <SelectItem value="Customer">Cliente (Customer)</SelectItem>
+                          <SelectItem value="Partner">Parceiro (Partner)</SelectItem>
                           <SelectItem value="StoreOwner">Proprietário (Store Owner)</SelectItem>
                           <SelectItem value="DeliveryGuy">Entregador (Delivery Guy)</SelectItem>
                           <SelectItem value="Staff">Funcionário (Staff)</SelectItem>
@@ -230,14 +235,6 @@ const UserDetailsPage = () => {
                   </div>
                 </div>
               )}
-
-              {/* Pedidos e Transações teriam estruturas de lista similares */}
-              {(activeTab === "pedidos" || activeTab === "transacoes") && (
-                 <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
-                    <ShoppingBag size={48} className="mb-4 text-slate-300" />
-                    <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Nenhum registro encontrado</p>
-                 </div>
-              )}
             </CardContent>
           </Card>
         </div>
@@ -245,13 +242,5 @@ const UserDetailsPage = () => {
     </AdminLayout>
   );
 };
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export default UserDetailsPage;

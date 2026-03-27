@@ -39,6 +39,7 @@ const MENU_STRUCTURE: NavItem[] = [
       { title: "Proprietários de lojas", href: "/admin/users/owners" },
       { title: "Entregadores", href: "/admin/users/drivers" },
       { title: "Funcionários", href: "/admin/users/staff" },
+      { title: "Parceiros", href: "/admin/users/partners" },
     ]
   },
   { 
