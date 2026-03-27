@@ -14,17 +14,24 @@ import {
 import { 
   Plus, Search, Edit2, Save, Utensils, Store, 
   ArrowLeft, ImageIcon, Star, Flame, Diamond, Leaf, Bone, Layers, Percent, DollarSign,
-  Copy, Trash2, Upload
+  Copy, Trash2, Upload, ListTree
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { showSuccess, showError } from "@/utils/toast";
 
-// Mocks para demonstração
+// Mocks para demonstração (Simulando o que viria de outras abas)
 const MOCK_STORES = [
   { id: 1, name: "LOJA TESTE", owner: "Helio Junio" },
   { id: 2, name: "LOJA TESTE 2", owner: "Helio Junio" },
   { id: 3, name: "Ki + Lanches", owner: "Helio Junio" },
+];
+
+const MOCK_COMPLEMENTS = [
+  { id: 1, name: "ADICIONAIS LANCHES", type: "Múltipla" },
+  { id: 2, name: "OPÇÕES DE REFRIGERANTES", type: "Única" },
+  { id: 3, name: "ADICIONAIS DE BURGER", type: "Múltipla" },
+  { id: 4, name: "TIPO DE PÃO", type: "Única" },
 ];
 
 const INITIAL_ITEMS = [
@@ -33,6 +40,7 @@ const INITIAL_ITEMS = [
     name: "X-TURBO BURGUER (CÓPIA)", 
     image: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400",
     stores: [1, 2, 3], 
+    complements: [1, 3],
     category: "SANDUÍCHE", 
     price: "22.90", 
     status: false,
@@ -48,6 +56,7 @@ const INITIAL_ITEMS = [
     name: "X-TURBO BURGUER", 
     image: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400",
     stores: [1, 2, 3], 
+    complements: [1, 3, 4],
     category: "SANDUÍCHE", 
     price: "22.90", 
     status: true,
@@ -63,6 +72,7 @@ const INITIAL_ITEMS = [
     name: "COMBO CASAL", 
     image: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400",
     stores: [1, 3], 
+    complements: [2],
     category: "COMBOS", 
     price: "45.00", 
     status: true,
@@ -89,6 +99,7 @@ const ItemsPage = () => {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("SANDUÍCHE");
   const [linkedStores, setLinkedStores] = useState<number[]>([]);
+  const [linkedComplements, setLinkedComplements] = useState<number[]>([]);
   const [promoType, setPromoType] = useState<"fixed" | "percent">("fixed");
   const [promoValue, setPromoValue] = useState("");
   const [origin, setOrigin] = useState("animal");
@@ -119,6 +130,7 @@ const ItemsPage = () => {
     setPrice(item.price);
     setCategory(item.category);
     setLinkedStores(item.stores || []);
+    setLinkedComplements(item.complements || []);
     setFeatures({ 
       recommended: item.isRecommended || false, 
       popular: item.isPopular || false, 
@@ -156,6 +168,7 @@ const ItemsPage = () => {
     setPrice("");
     setCategory("SANDUÍCHE");
     setLinkedStores([]);
+    setLinkedComplements([]);
     setFeatures({ recommended: false, popular: false, gourmet: false });
     setOrigin("animal");
     setPromoType("fixed");
@@ -189,6 +202,7 @@ const ItemsPage = () => {
       price: price.replace(",", "."),
       category,
       stores: linkedStores,
+      complements: linkedComplements,
       isRecommended: features.recommended,
       isPopular: features.popular,
       isGourmet: features.gourmet,
@@ -243,9 +257,10 @@ const ItemsPage = () => {
 
           <div className="p-10 space-y-12">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-              <div className="lg:col-span-2 space-y-8">
+              {/* Coluna Esquerda: Dados Principais */}
+              <div className="lg:col-span-2 space-y-12">
                 <section className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Imagem</Label>
+                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Imagem do Produto</Label>
                   <div className="flex flex-col md:flex-row gap-6 items-start">
                     <div 
                       onClick={() => fileInputRef.current?.click()}
@@ -261,19 +276,19 @@ const ItemsPage = () => {
                       ) : (
                         <>
                           <ImageIcon size={32} className="mb-2" />
-                          <span className="text-[9px] font-black uppercase tracking-tighter">Anexar</span>
+                          <span className="text-[9px] font-black uppercase tracking-tighter">Clique para anexar</span>
                         </>
                       )}
                       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
                     </div>
                     <div className="flex-1 space-y-4 w-full">
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Nome</Label>
+                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Nome do Produto</Label>
                         <Input value={name} onChange={(e) => setName(e.target.value)} className="rounded-2xl h-14 font-black uppercase text-lg" required />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Descrição</Label>
-                        <Textarea value={description} onChange={(e) => setDescription(e.target.value)} className="rounded-2xl min-h-[100px]" />
+                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Descrição Detalhada</Label>
+                        <Textarea value={description} onChange={(e) => setDescription(e.target.value)} className="rounded-2xl min-h-[100px] font-medium" />
                       </div>
                     </div>
                   </div>
@@ -302,11 +317,11 @@ const ItemsPage = () => {
                 <section className="bg-orange-50/50 p-8 rounded-[2.5rem] border border-orange-100 space-y-6">
                   <div className="flex items-center gap-2 mb-2">
                     <Percent className="text-orange-600" size={18} />
-                    <h4 className="text-[10px] font-black text-orange-900 uppercase">Promoção</h4>
+                    <h4 className="text-[10px] font-black text-orange-900 uppercase">Configuração de Promoção</h4>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-orange-700 ml-1">Tipo</Label>
+                      <Label className="text-[10px] font-black uppercase text-orange-700 ml-1">Tipo de Desconto</Label>
                       <div className="flex bg-white rounded-xl p-1 border border-orange-100">
                         <button type="button" onClick={() => { setPromoType("fixed"); setPromoValue(""); }} className={`flex-1 h-10 rounded-lg text-[10px] font-black ${promoType === 'fixed' ? 'bg-orange-600 text-white shadow-lg shadow-orange-200' : 'text-orange-400'}`}>R$ FIXO</button>
                         <button type="button" onClick={() => { setPromoType("percent"); setPromoValue(""); }} className={`flex-1 h-10 rounded-lg text-[10px] font-black ${promoType === 'percent' ? 'bg-orange-600 text-white shadow-lg shadow-orange-200' : 'text-orange-400'}`}>% PORCENTAGEM</button>
@@ -318,46 +333,102 @@ const ItemsPage = () => {
                     </div>
                   </div>
                 </section>
+
+                <section className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 space-y-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Layers className="text-slate-500" size={18} />
+                    <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Origem do Produto (Dieta)</h4>
+                  </div>
+                  <RadioGroup value={origin} onValueChange={setOrigin} className="flex flex-col md:flex-row gap-4">
+                    <div className={`flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all cursor-pointer flex-1 ${origin === 'vegetal' ? 'bg-white border-green-500 shadow-lg shadow-green-100' : 'bg-transparent border-slate-200'}`}>
+                      <RadioGroupItem value="vegetal" id="origin-vegetal" className="text-green-600 border-green-200" />
+                      <Label htmlFor="origin-vegetal" className="flex items-center gap-2 font-black uppercase text-[10px] tracking-widest text-green-600 cursor-pointer">
+                        <Leaf size={16} /> Vegetal
+                      </Label>
+                    </div>
+                    <div className={`flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all cursor-pointer flex-1 ${origin === 'animal' ? 'bg-white border-red-500 shadow-lg shadow-red-100' : 'bg-transparent border-slate-200'}`}>
+                      <RadioGroupItem value="animal" id="origin-animal" className="text-red-600 border-red-200" />
+                      <Label htmlFor="origin-animal" className="flex items-center gap-2 font-black uppercase text-[10px] tracking-widest text-red-600 cursor-pointer">
+                        <Bone size={16} /> Animal
+                      </Label>
+                    </div>
+                    <div className={`flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all cursor-pointer flex-1 ${origin === 'ambos' ? 'bg-white border-blue-500 shadow-lg shadow-blue-100' : 'bg-transparent border-slate-200'}`}>
+                      <RadioGroupItem value="ambos" id="origin-ambos" className="text-blue-600 border-blue-200" />
+                      <Label htmlFor="origin-ambos" className="flex items-center gap-2 font-black uppercase text-[10px] tracking-widest text-blue-600 cursor-pointer">
+                        <Layers size={16} /> Ambos
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </section>
               </div>
 
+              {/* Coluna Direita: Destaques e Vínculos */}
               <div className="space-y-8">
                 <section className="bg-slate-900 p-8 rounded-[2.5rem] text-white space-y-6 shadow-xl">
                   <div className="flex items-center gap-2 mb-2">
                     <Star className="text-orange-400" size={18} />
-                    <h4 className="text-[10px] font-black uppercase text-orange-400">Destaques</h4>
+                    <h4 className="text-[10px] font-black uppercase text-orange-400 tracking-widest">Destaques no App</h4>
                   </div>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
+                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
                       <div className="flex items-center gap-3">
                         <Star className={`transition-colors ${features.recommended ? 'text-orange-400 fill-orange-400' : 'text-white/20'}`} size={20} />
-                        <span className="text-[11px] font-black uppercase">RECOMENDADO</span>
+                        <div>
+                          <p className="text-[11px] font-black uppercase tracking-tight leading-none">RECOMENDADO</p>
+                          <p className="text-[9px] text-white/40 font-bold uppercase mt-1">Topo do App</p>
+                        </div>
                       </div>
                       <Switch checked={features.recommended} onCheckedChange={(val) => setFeatures({...features, recommended: val})} className="data-[state=checked]:bg-orange-500" />
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
+                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
                       <div className="flex items-center gap-3">
                         <Flame className={`transition-colors ${features.popular ? 'text-rose-500 fill-rose-500' : 'text-white/20'}`} size={20} />
-                        <span className="text-[11px] font-black uppercase">POPULAR</span>
+                        <span className="text-[11px] font-black uppercase tracking-tight">POPULAR</span>
                       </div>
                       <Switch checked={features.popular} onCheckedChange={(val) => setFeatures({...features, popular: val})} className="data-[state=checked]:bg-rose-600" />
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
+                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
                       <div className="flex items-center gap-3">
                         <Diamond className={`transition-colors ${features.gourmet ? 'text-indigo-400 fill-indigo-400' : 'text-white/20'}`} size={20} />
-                        <span className="text-[11px] font-black uppercase">GOURMET</span>
+                        <span className="text-[11px] font-black uppercase tracking-tight">GOURMET</span>
                       </div>
                       <Switch checked={features.gourmet} onCheckedChange={(val) => setFeatures({...features, gourmet: val})} className="data-[state=checked]:bg-indigo-600" />
                     </div>
                   </div>
                 </section>
 
+                <section className="bg-white p-8 rounded-[2.5rem] border border-slate-100 space-y-4 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ListTree className="text-orange-600" size={18} />
+                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Anexar Complementos</Label>
+                  </div>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
+                    {MOCK_COMPLEMENTS.map(comp => (
+                      <div key={comp.id} className={`flex items-center space-x-3 p-4 rounded-2xl border transition-all group ${linkedComplements.includes(comp.id) ? 'bg-orange-50 border-orange-200' : 'bg-slate-50 border-transparent hover:border-slate-200'}`}>
+                        <Checkbox 
+                          id={`comp-${comp.id}`} 
+                          checked={linkedComplements.includes(comp.id)} 
+                          onCheckedChange={(checked) => checked ? setLinkedComplements([...linkedComplements, comp.id]) : setLinkedComplements(linkedComplements.filter(id => id !== comp.id))} 
+                        />
+                        <label htmlFor={`comp-${comp.id}`} className="flex flex-col cursor-pointer flex-1">
+                          <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{comp.name}</span>
+                          <span className="text-[8px] font-bold text-slate-400 uppercase">{comp.type}</span>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
                 <section className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-4">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Lojas</Label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Store className="text-slate-500" size={18} />
+                    <Label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-widest">Lojas Vinculadas</Label>
+                  </div>
                   <div className="space-y-3">
                     {MOCK_STORES.map(store => (
-                      <div key={store.id} className="flex items-center space-x-3 bg-white p-4 rounded-2xl border border-slate-200/50">
+                      <div key={store.id} className="flex items-center space-x-3 bg-white p-4 rounded-2xl border border-slate-200/50 hover:border-orange-200 transition-colors">
                         <Checkbox id={`store-${store.id}`} checked={linkedStores.includes(store.id)} onCheckedChange={(checked) => checked ? setLinkedStores([...linkedStores, store.id]) : setLinkedStores(linkedStores.filter(id => id !== store.id))} />
-                        <label htmlFor={`store-${store.id}`} className="text-xs font-black text-slate-700 uppercase cursor-pointer">{store.name}</label>
+                        <label htmlFor={`store-${store.id}`} className="text-[10px] font-black text-slate-700 uppercase cursor-pointer flex-1">{store.name}</label>
                       </div>
                     ))}
                   </div>
@@ -367,7 +438,7 @@ const ItemsPage = () => {
           </div>
 
           <div className="p-8 bg-slate-900 flex justify-end">
-            <Button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white px-16 h-16 rounded-[2rem] font-black uppercase text-[11px] shadow-2xl">
+            <Button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white px-16 h-16 rounded-[2rem] font-black uppercase tracking-widest text-[11px] shadow-2xl active:scale-95 transition-all">
               <Save size={20} className="mr-3" /> SALVAR PRODUTO
             </Button>
           </div>
@@ -382,7 +453,7 @@ const ItemsPage = () => {
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Gestão de Cardápio</h1>
         </div>
-        <Button onClick={handleAddNew} className="bg-orange-600 hover:bg-orange-700 text-white rounded-2xl font-black h-14 px-8 uppercase text-[10px] tracking-widest">
+        <Button onClick={handleAddNew} className="bg-orange-600 hover:bg-orange-700 text-white rounded-2xl font-black h-14 px-8 uppercase text-[10px] tracking-widest shadow-xl shadow-orange-100">
           <Plus size={20} className="mr-2" /> Novo produto
         </Button>
       </div>
@@ -391,7 +462,7 @@ const ItemsPage = () => {
         <div className="p-8 border-b border-slate-50 bg-slate-50/30">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <Input placeholder="Pesquisar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-12 h-14 bg-white rounded-2xl font-bold" />
+            <Input placeholder="Pesquisar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-12 h-14 bg-white rounded-2xl font-bold border-slate-200" />
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -415,49 +486,50 @@ const ItemsPage = () => {
                   <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-8 py-5 font-bold text-slate-300">#{item.id}</td>
                     <td className="px-8 py-5">
-                      <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden border border-slate-100 bg-slate-100">
+                      <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden border border-slate-100 bg-slate-100 shadow-sm">
                         <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                       </div>
                     </td>
                     <td className="px-8 py-5">
                       <div className="flex flex-col">
-                        <span className="font-black text-slate-900 uppercase text-sm">{item.name}</span>
+                        <span className="font-black text-slate-900 uppercase group-hover:text-orange-600 transition-colors text-sm">{item.name}</span>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {item.stores?.map(sid => (
-                            <Badge key={sid} variant="secondary" className="bg-slate-100 text-slate-400 font-bold border-none text-[8px] uppercase">{MOCK_STORES.find(s => s.id === sid)?.name}</Badge>
-                          ))}
+                          <Badge variant="outline" className={`text-[8px] font-black uppercase px-2 border-slate-200 ${item.origin === 'vegetal' ? 'text-green-600 bg-green-50' : item.origin === 'animal' ? 'text-red-600 bg-red-50' : 'text-blue-600 bg-blue-50'}`}>
+                            {item.origin === 'vegetal' ? 'Vegetal' : item.origin === 'animal' ? 'Animal' : 'Ambos'}
+                          </Badge>
                         </div>
                       </div>
                     </td>
                     <td className="px-8 py-5">
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-1.5 items-center">
                         {item.isRecommended && <Star size={14} className="text-orange-400 fill-orange-400" />}
                         {item.isPopular && <Flame size={14} className="text-rose-500 fill-rose-500" />}
                         {item.isGourmet && <Diamond size={14} className="text-indigo-400 fill-indigo-400" />}
+                        <span className="text-[9px] font-bold text-slate-300 ml-1">({item.complements?.length || 0} comp.)</span>
                       </div>
                     </td>
                     <td className="px-8 py-5">
                       <div className="flex flex-col">
                         {hasDiscount ? (
                           <>
-                            <span className="text-[10px] font-bold text-slate-400 line-through">R$ {item.price}</span>
-                            <span className="font-black text-orange-600">R$ {discountedPrice.toFixed(2).replace(".", ",")}</span>
+                            <span className="text-[10px] font-bold text-slate-400 line-through">R$ {parseFloat(item.price.replace(",", ".")).toFixed(2)}</span>
+                            <span className="font-black text-orange-600">R$ {discountedPrice.toFixed(2)}</span>
                           </>
                         ) : (
-                          <span className="font-black text-slate-900">R$ {item.price}</span>
+                          <span className="font-black text-slate-900">R$ {parseFloat(item.price.replace(",", ".")).toFixed(2)}</span>
                         )}
                       </div>
                     </td>
                     <td className="px-8 py-5 text-center">
-                      <button onClick={() => toggleStatus(item.id)} className={`border-none font-black text-[9px] uppercase px-4 py-1.5 rounded-full ${item.status ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                      <button onClick={() => toggleStatus(item.id)} className={`border-none font-black text-[9px] uppercase px-4 py-1.5 rounded-full transition-all active:scale-90 ${item.status ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                         {item.status ? 'ATIVO' : 'INATIVO'}
                       </button>
                     </td>
                     <td className="px-8 py-5 text-right">
                       <div className="flex justify-end gap-2">
-                        <Button onClick={() => handleDuplicate(item)} variant="ghost" size="icon" className="h-12 w-12 bg-slate-100 text-slate-400 rounded-2xl"><Copy size={18} /></Button>
-                        <Button onClick={() => handleEdit(item)} variant="ghost" size="icon" className="h-12 w-12 bg-slate-900 text-white rounded-2xl"><Edit2 size={18} /></Button>
-                        <Button onClick={() => handleDelete(item.id)} variant="ghost" size="icon" className="h-12 w-12 bg-slate-50 text-slate-300 hover:bg-red-600 hover:text-white rounded-2xl"><Trash2 size={18} /></Button>
+                        <Button onClick={() => handleDuplicate(item)} variant="ghost" size="icon" className="h-12 w-12 bg-slate-100 text-slate-400 rounded-2xl hover:bg-orange-600 hover:text-white transition-all"><Copy size={18} /></Button>
+                        <Button onClick={() => handleEdit(item)} variant="ghost" size="icon" className="h-12 w-12 bg-slate-900 text-white rounded-2xl hover:bg-black transition-all"><Edit2 size={18} /></Button>
+                        <Button onClick={() => handleDelete(item.id)} variant="ghost" size="icon" className="h-12 w-12 bg-slate-50 text-slate-300 hover:bg-red-600 hover:text-white rounded-2xl transition-all"><Trash2 size={18} /></Button>
                       </div>
                     </td>
                   </tr>
