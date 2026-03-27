@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   User, Shield, Wallet, History, ShoppingBag, MapPin, 
-  ArrowLeft, RefreshCcw, ExternalLink, Plus, MapPinned
+  ArrowLeft, RefreshCcw, ExternalLink, Plus, MapPinned,
+  ArrowUpCircle, ArrowDownCircle
 } from "lucide-react";
 import { showSuccess } from "@/utils/toast";
 import {
@@ -34,14 +35,16 @@ const UserDetailsPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("detalhes");
   const [walletAmount, setWalletAmount] = useState("R$ 0,00");
+  const [walletOperation, setWalletOperation] = useState<"add" | "subtract">("add");
+  const [walletDescription, setWalletDescription] = useState("");
   const [isAddressOpen, setIsAddressOpen] = useState(false);
 
-  const [userData] = useState({
+  const [userData, setUserData] = useState({
     name: "Felipe Denis",
     email: "felipeacompanhamento@gmail.com",
     phone: "+55 (88) 99926-6723",
     role: "Cliente",
-    wallet: "R$ 0,00",
+    wallet: 0.00,
     ip: "138.219.182.240"
   });
 
@@ -59,19 +62,43 @@ const UserDetailsPage = () => {
   };
 
   const handleWalletUpdate = () => {
-    showSuccess(`Saldo atualizado com sucesso!`);
+    const rawValue = walletAmount.replace(/[^\d,]/g, "").replace(",", ".");
+    const numericValue = parseFloat(rawValue);
+
+    if (isNaN(numericValue) || numericValue === 0) return;
+
+    const newWallet = walletOperation === "add" 
+      ? userData.wallet + numericValue 
+      : Math.max(0, userData.wallet - numericValue);
+
+    setUserData({ ...userData, wallet: newWallet });
+    showSuccess(`Saldo ${walletOperation === 'add' ? 'adicionado' : 'abatido'} com sucesso!`);
     handleWalletReset();
+    setWalletDescription("");
+  };
+
+  const handleSaveProfile = () => {
+    showSuccess("Alterações no perfil salvas com sucesso!");
+  };
+
+  const handleSaveFunction = () => {
+    showSuccess("Novas funções e permissões atribuídas!");
   };
 
   const formatCurrency = (val: string) => {
     let v = val.replace(/\D/g, "");
     if (!v) return "R$ 0,00";
-    v = (parseInt(v) / 100).toLocaleString("pt-BR", {
+    const numeric = parseInt(v) / 100;
+    return numeric.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
     });
-    return v;
   };
+
+  const displayWallet = userData.wallet.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
 
   return (
     <AdminLayout>
@@ -106,7 +133,7 @@ const UserDetailsPage = () => {
           </div>
         </aside>
 
-        <div className="flex-1 space-y-8">
+        <div className="flex-1 space-y-8 pb-20">
           <Card className="border-none shadow-sm rounded-[3rem] overflow-hidden">
             <CardContent className="p-10">
               {activeTab === "detalhes" && (
@@ -127,7 +154,7 @@ const UserDetailsPage = () => {
                     </div>
                   </div>
                   <div className="pt-6 border-t flex justify-end">
-                    <Button className="bg-slate-900 hover:bg-black text-white rounded-xl px-8 h-12 font-black uppercase tracking-widest text-[10px] gap-2">
+                    <Button onClick={handleSaveProfile} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl px-8 h-12 font-black uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-emerald-100">
                       <RefreshCcw size={16} /> Salvar Alterações
                     </Button>
                   </div>
@@ -168,6 +195,11 @@ const UserDetailsPage = () => {
                     </Select>
                     <p className="text-[10px] text-slate-400 font-bold uppercase italic">* O perfil de Cliente será mantido independentemente da função escolhida.</p>
                   </div>
+                  <div className="pt-6 border-t flex justify-end">
+                    <Button onClick={handleSaveFunction} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl px-8 h-12 font-black uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-emerald-100">
+                      <RefreshCcw size={16} /> Salvar Alterações
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -180,14 +212,37 @@ const UserDetailsPage = () => {
                         </div>
                         <div>
                           <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Saldo disponível</p>
-                          <h4 className="text-3xl font-black text-orange-900">{userData.wallet}</h4>
+                          <h4 className="text-3xl font-black text-orange-900">{displayWallet}</h4>
                         </div>
                      </div>
                   </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                     <div className="space-y-6">
+                       <div className="space-y-3">
+                         <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Escolha a Operação:</Label>
+                         <div className="flex gap-4">
+                            <button 
+                              onClick={() => setWalletOperation("add")}
+                              className={`flex-1 flex items-center justify-center gap-2 h-14 rounded-2xl border-2 transition-all font-black uppercase text-[10px] tracking-widest
+                                ${walletOperation === 'add' ? 'bg-emerald-50 border-emerald-500 text-emerald-600 shadow-lg shadow-emerald-100' : 'bg-white border-slate-100 text-slate-400 hover:bg-slate-50'}
+                              `}
+                            >
+                              <ArrowUpCircle size={18} /> Adicionar
+                            </button>
+                            <button 
+                              onClick={() => setWalletOperation("subtract")}
+                              className={`flex-1 flex items-center justify-center gap-2 h-14 rounded-2xl border-2 transition-all font-black uppercase text-[10px] tracking-widest
+                                ${walletOperation === 'subtract' ? 'bg-red-50 border-red-500 text-red-600 shadow-lg shadow-red-100' : 'bg-white border-slate-100 text-slate-400 hover:bg-slate-50'}
+                              `}
+                            >
+                              <ArrowDownCircle size={18} /> Abater
+                            </button>
+                         </div>
+                       </div>
+
                        <div className="space-y-2">
-                         <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Valor para adicionar:</Label>
+                         <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Valor da Movimentação:</Label>
                          <Input 
                            value={walletAmount} 
                            onChange={(e) => setWalletAmount(formatCurrency(e.target.value))} 
@@ -196,18 +251,69 @@ const UserDetailsPage = () => {
                          />
                        </div>
                        <div className="space-y-2">
-                         <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Descrição:</Label>
-                         <Input placeholder="Motivo do ajuste..." className="h-14 rounded-2xl font-bold" />
+                         <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Descrição / Motivo:</Label>
+                         <Input 
+                          placeholder="Ex: Cashback de indicação ou Estorno de pedido" 
+                          value={walletDescription}
+                          onChange={(e) => setWalletDescription(e.target.value)}
+                          className="h-14 rounded-2xl font-bold" 
+                         />
                        </div>
-                       <Button onClick={handleWalletUpdate} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl h-14 w-full font-black uppercase tracking-widest text-[11px] shadow-lg shadow-emerald-100">
-                         Atualizar Saldo Agora
+                       <Button 
+                        onClick={handleWalletUpdate} 
+                        className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg transition-all active:scale-95
+                          ${walletOperation === 'add' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-100' : 'bg-red-600 hover:bg-red-700 shadow-red-100'}
+                        `}
+                       >
+                         {walletOperation === 'add' ? 'Adicionar Saldo Agora' : 'Confirmar Abatimento'}
                        </Button>
                     </div>
-                    <div className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100">
+
+                    <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex flex-col justify-center text-center">
                        <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Ação Rápida</h5>
-                       <p className="text-xs font-medium text-slate-500 mb-6">Ao clicar no campo de valor, o saldo volta automaticamente para R$ 0,00 para facilitar sua nova entrada.</p>
-                       <Button variant="outline" className="w-full h-12 rounded-xl font-bold text-red-500 border-red-100 hover:bg-red-50">Zerar Carteira</Button>
+                       <p className="text-xs font-bold text-slate-500 mb-8 leading-relaxed">
+                        Ao clicar no campo de valor, o saldo volta automaticamente para R$ 0,00 para facilitar sua nova entrada.
+                       </p>
+                       <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setWalletOperation("subtract");
+                          setWalletAmount(formatCurrency(userData.wallet.toFixed(2)));
+                          setWalletDescription("Zerar carteira administrativa");
+                        }}
+                        className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] text-red-500 border-red-100 hover:bg-red-50"
+                       >
+                        Zerar Carteira Total
+                       </Button>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "transacoes" && (
+                <div className="space-y-8">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b pb-4">Histórico de Movimentações</h3>
+                  <div className="bg-slate-50 rounded-3xl border border-slate-100 overflow-hidden">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="bg-slate-100/50">
+                          <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo</th>
+                          <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Descrição</th>
+                          <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor</th>
+                          <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Data</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        <tr>
+                          <td className="px-6 py-4">
+                            <Badge className="bg-emerald-100 text-emerald-600 border-none font-black text-[9px]">CRÉDITO</Badge>
+                          </td>
+                          <td className="px-6 py-4 text-xs font-bold text-slate-600">Cadastro de Boas-vindas</td>
+                          <td className="px-6 py-4 font-black text-slate-900">R$ 5,00</td>
+                          <td className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase">26/03/2026</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
