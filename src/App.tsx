@@ -15,6 +15,8 @@ import StoresPage from "./pages/admin/StoresPage";
 import MenuCategoriesPage from "./pages/admin/MenuCategoriesPage";
 import ComplementsPage from "./pages/admin/ComplementsPage";
 import ItemsPage from "./pages/admin/ItemsPage";
+import UsersPage from "./pages/admin/UsersPage";
+import UserDetailsPage from "./pages/admin/UserDetailsPage";
 import GenericAdminPage from "./pages/admin/GenericAdminPage";
 
 const queryClient = new QueryClient();
@@ -41,11 +43,12 @@ const App = () => (
           <Route path="/admin/menu/items" element={<ItemsPage />} />
           
           {/* Usuários */}
-          <Route path="/admin/users/all" element={<GenericAdminPage title="Todos os Usuários" />} />
-          <Route path="/admin/users/customers" element={<GenericAdminPage title="Clientes" />} />
-          <Route path="/admin/users/owners" element={<GenericAdminPage title="Proprietários" />} />
-          <Route path="/admin/users/drivers" element={<GenericAdminPage title="Entregadores" />} />
-          <Route path="/admin/users/staff" element={<GenericAdminPage title="Funcionários" />} />
+          <Route path="/admin/users/all" element={<UsersPage />} />
+          <Route path="/admin/users/customers" element={<UsersPage />} />
+          <Route path="/admin/users/owners" element={<UsersPage />} />
+          <Route path="/admin/users/drivers" element={<UsersPage />} />
+          <Route path="/admin/users/staff" element={<UsersPage />} />
+          <Route path="/admin/users/edit/:id" element={<UserDetailsPage />} />
           
           {/* Pedidos */}
           <Route path="/admin/orders/list" element={<GenericAdminPage title="Lista de Pedidos" />} />
