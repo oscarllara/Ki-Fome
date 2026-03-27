@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/select";
 import { 
   Plus, Search, Edit2, Save, Utensils, Store, 
-  ArrowLeft, ImageIcon, Star, Flame, Diamond, Leaf, Bone, Layers, Percent, DollarSign
+  ArrowLeft, ImageIcon, Star, Flame, Diamond, Leaf, Bone, Layers, Percent, DollarSign,
+  Copy
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -43,6 +44,19 @@ const INITIAL_ITEMS = [
     status: true,
     isRecommended: true,
     isPopular: true,
+    isGourmet: false,
+    origin: "animal"
+  },
+  { 
+    id: 9, 
+    name: "COMBO CASAL", 
+    image: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400",
+    stores: [1, 3], 
+    category: "COMBOS", 
+    price: "45.00", 
+    status: true,
+    isRecommended: false,
+    isPopular: false,
     isGourmet: false,
     origin: "animal"
   },
@@ -78,12 +92,28 @@ const ItemsPage = () => {
     setView("form");
   };
 
+  const handleDuplicate = (item: any) => {
+    const newItem = {
+      ...item,
+      id: Math.max(...items.map(i => i.id)) + 1,
+      name: `${item.name} (CÓPIA)`,
+      status: false // Por segurança, a cópia vem desativada
+    };
+    setItems([newItem, ...items]);
+    showSuccess(`Produto "${item.name}" duplicado com sucesso!`);
+  };
+
   const handleAddNew = () => {
     setEditingItem(null);
     setLinkedStores([]);
     setFeatures({ recommended: false, popular: false, gourmet: false });
     setOrigin("animal");
     setView("form");
+  };
+
+  const toggleStatus = (id: number) => {
+    setItems(items.map(item => item.id === id ? { ...item, status: !item.status } : item));
+    showSuccess("Status do item atualizado!");
   };
 
   const handleSave = (e: React.FormEvent) => {
@@ -335,7 +365,6 @@ const ItemsPage = () => {
     );
   }
 
-  // TELA DE LISTAGEM (MANTIDA MAS COM ESTILO REFORÇADO)
   return (
     <AdminLayout>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -386,7 +415,13 @@ const ItemsPage = () => {
                   <td className="px-8 py-5">
                     <div className="flex flex-col">
                       <span className="font-black text-slate-900 uppercase group-hover:text-orange-600 transition-colors text-sm">{item.name}</span>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{item.category}</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {item.stores?.map(sid => (
+                          <Badge key={sid} variant="secondary" className="bg-slate-100 text-slate-400 font-bold border-none text-[8px] uppercase px-1.5 py-0 h-4">
+                            {MOCK_STORES.find(s => s.id === sid)?.name}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   </td>
                   <td className="px-8 py-5">
@@ -411,14 +446,25 @@ const ItemsPage = () => {
                     </button>
                   </td>
                   <td className="px-8 py-5 text-right">
-                    <Button 
-                      onClick={() => handleEdit(item)}
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-12 w-12 bg-slate-900 text-white hover:bg-black rounded-2xl shadow-lg shadow-slate-200"
-                    >
-                      <Edit2 size={18} />
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        onClick={() => handleDuplicate(item)}
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-12 w-12 bg-slate-100 text-slate-400 hover:bg-orange-600 hover:text-white rounded-2xl transition-all"
+                        title="Duplicar Produto"
+                      >
+                        <Copy size={18} />
+                      </Button>
+                      <Button 
+                        onClick={() => handleEdit(item)}
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-12 w-12 bg-slate-900 text-white hover:bg-black rounded-2xl shadow-lg shadow-slate-200"
+                      >
+                        <Edit2 size={18} />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
