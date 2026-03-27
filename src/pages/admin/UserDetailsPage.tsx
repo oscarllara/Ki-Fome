@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -11,42 +11,110 @@ import { Card, CardContent } from "@/components/ui/card";
 import { 
   User, Shield, Wallet, History, ShoppingBag, MapPin, 
   ArrowLeft, RefreshCcw, ExternalLink, Plus, MapPinned,
-  ArrowUpCircle, ArrowDownCircle
+  ArrowUpCircle, ArrowDownCircle, Trash2, Edit2
 } from "lucide-react";
-import { showSuccess } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 
 const UserDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("detalhes");
+  const [users, setUsers] = useState<any[]>([]);
+  const [user, setUser] = useState<any>(null);
+  
+  // Carteira
   const [walletAmount, setWalletAmount] = useState("R$ 0,00");
   const [walletOperation, setWalletOperation] = useState<"add" | "subtract">("add");
   const [walletDescription, setWalletDescription] = useState("");
-  const [isAddressOpen, setIsAddressOpen] = useState(false);
 
-  const [userData, setUserData] = useState({
-    name: "Felipe Denis",
-    email: "felipeacompanhamento@gmail.com",
-    phone: "+55 (88) 99926-6723",
-    role: "Cliente",
-    wallet: 0.00,
-    ip: "138.219.182.240"
-  });
+  // Endereços
+  const [addresses, setAddresses] = useState<any[]>([
+    { id: 1, zip: "37200-000", street: "Rua Central", number: "500", neighborhood: "Centro", city: "Lavras", state: "MG", isDefault: true }
+  ]);
+  const [isAddressOpen, setIsAddressOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<any>(null);
+  const [addressFormData, setAddressFormData] = useState({ zip: "", street: "", number: "", neighborhood: "", city: "", state: "" });
+
+  useEffect(() => {
+    const savedUsers = localStorage.getItem("kifome_users");
+    if (savedUsers) {
+      const parsed = JSON.parse(savedUsers);
+      setUsers(parsed);
+      const found = parsed.find((u: any) => u.id === Number(id));
+      setUser(found || parsed[0]);
+    }
+  }, [id]);
+
+  const saveToLocal = (updatedUser: any) => {
+    const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
+    setUsers(updatedUsers);
+    localStorage.setItem("kifome_users", JSON.stringify(updatedUsers));
+  };
+
+  const handleCEPChange = async (val: string) => {
+    let v = val.replace(/\D/g, "");
+    if (v.length > 8) v = v.substring(0, 8);
+    if (v.length > 5) v = v.substring(0, 5) + "-" + v.substring(5);
+    setAddressFormData({ ...addressFormData, zip: v });
+
+    if (v.replace("-", "").length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${v.replace("-", "")}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setAddressFormData(prev => ({ ...prev, zip: v, street: data.logradouro, neighborhood: data.bairro, city: data.localidade, state: data.uf }));
+          showSuccess("CEP localizado!");
+        }
+      } catch (err) {
+        showError("Erro ao buscar CEP.");
+      }
+    }
+  };
+
+  const handleSaveAddress = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingAddress) {
+      setAddresses(addresses.map(a => a.id === editingAddress.id ? { ...addressFormData, id: a.id, isDefault: a.isDefault } : a));
+      showSuccess("Endereço atualizado!");
+    } else {
+      setAddresses([...addresses, { ...addressFormData, id: Date.now(), isDefault: false }]);
+      showSuccess("Endereço adicionado!");
+    }
+    setIsAddressOpen(false);
+    setEditingAddress(null);
+    setAddressFormData({ zip: "", street: "", number: "", neighborhood: "", city: "", state: "" });
+  };
+
+  const removeAddress = (addrId: number) => {
+    setAddresses(addresses.filter(a => a.id !== addrId));
+    showSuccess("Endereço removido.");
+  };
+
+  const handleWalletUpdate = () => {
+    const rawValue = walletAmount.replace(/[^\d,]/g, "").replace(",", ".");
+    const numericValue = parseFloat(rawValue);
+    if (isNaN(numericValue) || numericValue === 0) return;
+
+    const newWallet = walletOperation === "add" ? user.wallet + numericValue : Math.max(0, user.wallet - numericValue);
+    const updatedUser = { ...user, wallet: newWallet };
+    setUser(updatedUser);
+    saveToLocal(updatedUser);
+    showSuccess(`Saldo ${walletOperation === 'add' ? 'adicionado' : 'abatido'}!`);
+    setWalletAmount("R$ 0,00");
+  };
+
+  const updateRole = (newRole: string) => {
+    const updatedUser = { ...user, role: newRole };
+    setUser(updatedUser);
+    saveToLocal(updatedUser);
+    showSuccess("Função atualizada!");
+  };
 
   const tabs = [
     { id: "detalhes", label: "Dados Pessoais", icon: <User size={18} /> },
@@ -57,134 +125,58 @@ const UserDetailsPage = () => {
     { id: "enderecos", label: "Endereços cadastrados", icon: <MapPin size={18} /> },
   ];
 
-  const handleWalletReset = () => {
-    setWalletAmount("R$ 0,00");
-  };
-
-  const handleWalletUpdate = () => {
-    const rawValue = walletAmount.replace(/[^\d,]/g, "").replace(",", ".");
-    const numericValue = parseFloat(rawValue);
-
-    if (isNaN(numericValue) || numericValue === 0) return;
-
-    const newWallet = walletOperation === "add" 
-      ? userData.wallet + numericValue 
-      : Math.max(0, userData.wallet - numericValue);
-
-    setUserData({ ...userData, wallet: newWallet });
-    showSuccess(`Saldo ${walletOperation === 'add' ? 'adicionado' : 'abatido'} com sucesso!`);
-    handleWalletReset();
-    setWalletDescription("");
-  };
-
-  const handleSaveProfile = () => {
-    showSuccess("Alterações no perfil salvas com sucesso!");
-  };
-
-  const handleSaveFunction = () => {
-    showSuccess("Novas funções e permissões atribuídas!");
-  };
-
-  const formatCurrency = (val: string) => {
-    let v = val.replace(/\D/g, "");
-    if (!v) return "R$ 0,00";
-    const numeric = parseInt(v) / 100;
-    return numeric.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-  };
-
-  const displayWallet = userData.wallet.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
+  if (!user) return null;
 
   return (
     <AdminLayout>
-      <header className="mb-8">
-        <button 
-          onClick={() => navigate("/admin/users/all")} 
-          className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-orange-600 transition-colors mb-4"
-        >
-          <ArrowLeft size={14} /> Voltar para lista
-        </button>
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">
-          Perfil <span className="text-slate-300">/</span> {userData.name}
-        </h1>
+      <header className="mb-8 flex items-center justify-between">
+        <div>
+          <button onClick={() => navigate("/admin/users/all")} className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-orange-600 mb-2">
+            <ArrowLeft size={14} /> Voltar para lista
+          </button>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Perfil / {user.name}</h1>
+        </div>
       </header>
 
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col lg:flex-row gap-8 pb-20">
         <aside className="w-full lg:w-72 shrink-0">
           <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden sticky top-28">
             {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-8 py-5 text-sm font-bold transition-all border-l-4
-                  ${activeTab === tab.id 
-                    ? "bg-red-50 text-red-600 border-red-600" 
-                    : "text-slate-500 border-transparent hover:bg-slate-50"}
-                `}
-              >
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-3 px-8 py-5 text-sm font-bold transition-all border-l-4 ${activeTab === tab.id ? "bg-red-50 text-red-600 border-red-600" : "text-slate-500 border-transparent hover:bg-slate-50"}`}>
                 {tab.icon} {tab.label}
               </button>
             ))}
           </div>
         </aside>
 
-        <div className="flex-1 space-y-8 pb-20">
+        <div className="flex-1">
           <Card className="border-none shadow-sm rounded-[3rem] overflow-hidden">
             <CardContent className="p-10">
               {activeTab === "detalhes" && (
                 <div className="space-y-8">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b pb-4">Informações de Cadastro</h3>
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-4">Dados Básicos</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label className="text-xs font-black uppercase text-slate-400">Nome Completo</Label>
-                      <Input defaultValue={userData.name} className="h-12 rounded-xl font-bold" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-black uppercase text-slate-400">E-mail</Label>
-                      <Input defaultValue={userData.email} className="h-12 rounded-xl font-bold" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-black uppercase text-slate-400">Telefone</Label>
-                      <Input defaultValue={userData.phone} className="h-12 rounded-xl font-bold" />
-                    </div>
+                    <div className="space-y-2"><Label className="text-xs font-black uppercase text-slate-400">Nome</Label><Input defaultValue={user.name} className="h-12 rounded-xl" /></div>
+                    <div className="space-y-2"><Label className="text-xs font-black uppercase text-slate-400">E-mail</Label><Input defaultValue={user.email} className="h-12 rounded-xl" /></div>
+                    <div className="space-y-2"><Label className="text-xs font-black uppercase text-slate-400">WhatsApp</Label><Input defaultValue={user.phone} className="h-12 rounded-xl" /></div>
                   </div>
-                  <div className="pt-6 border-t flex justify-end">
-                    <Button onClick={handleSaveProfile} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl px-8 h-12 font-black uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-emerald-100">
-                      <RefreshCcw size={16} /> Salvar Alterações
-                    </Button>
-                  </div>
+                  <div className="flex justify-end pt-4"><Button onClick={() => showSuccess("Perfil salvo!")} className="bg-emerald-500 text-white rounded-xl h-12 px-8 font-black uppercase text-[10px]">Salvar Alterações</Button></div>
                 </div>
               )}
 
               {activeTab === "funcao" && (
                 <div className="space-y-8">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b pb-4">Gerenciar Funções</h3>
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-4">Gerenciar Funções</h3>
                   <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status Atual</p>
-                      <div className="flex gap-2">
-                        <Badge className="bg-emerald-500 text-white border-none rounded-lg px-3 py-1 font-black text-[10px] uppercase">Cliente</Badge>
-                        {userData.role !== "Cliente" && (
-                          <Badge className="bg-orange-500 text-white border-none rounded-lg px-3 py-1 font-black text-[10px] uppercase">{userData.role}</Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Acesso Master</p>
-                      <p className="text-sm font-black text-slate-900">HABILITADO</p>
+                    <div className="flex gap-2">
+                      <Badge className="bg-emerald-500 text-white rounded-lg px-3 py-1 font-black text-[10px] uppercase">Cliente</Badge>
+                      {user.role !== "Cliente" && <Badge className="bg-orange-500 text-white rounded-lg px-3 py-1 font-black text-[10px] uppercase">{user.role}</Badge>}
                     </div>
                   </div>
                   <div className="max-w-md space-y-4">
-                    <Label className="text-sm font-black text-slate-600">Atribuir Nova Função Adicional:</Label>
-                    <Select defaultValue={userData.role}>
-                      <SelectTrigger className="h-14 rounded-2xl font-black uppercase text-[10px]">
-                        <SelectValue />
-                      </SelectTrigger>
+                    <Label className="text-sm font-black text-slate-600">Atribuir Nova Função:</Label>
+                    <Select value={user.role} onValueChange={updateRole}>
+                      <SelectTrigger className="h-14 rounded-2xl font-black uppercase text-[10px]"><SelectValue /></SelectTrigger>
                       <SelectContent className="rounded-2xl">
                         <SelectItem value="Cliente" className="font-bold">Apenas Cliente</SelectItem>
                         <SelectItem value="Parceiro" className="font-bold">Parceiro</SelectItem>
@@ -193,127 +185,30 @@ const UserDetailsPage = () => {
                         <SelectItem value="Funcionário" className="font-bold">Funcionário</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase italic">* O perfil de Cliente será mantido independentemente da função escolhida.</p>
-                  </div>
-                  <div className="pt-6 border-t flex justify-end">
-                    <Button onClick={handleSaveFunction} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl px-8 h-12 font-black uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-emerald-100">
-                      <RefreshCcw size={16} /> Salvar Alterações
-                    </Button>
                   </div>
                 </div>
               )}
 
               {activeTab === "saldo" && (
                 <div className="space-y-8">
-                  <div className="bg-orange-50 border border-orange-100 p-8 rounded-[2rem] flex items-center justify-between shadow-inner">
-                     <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-orange-600 shadow-sm">
-                          <Wallet size={32} />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Saldo disponível</p>
-                          <h4 className="text-3xl font-black text-orange-900">{displayWallet}</h4>
-                        </div>
-                     </div>
+                  <div className="bg-orange-50 border border-orange-100 p-8 rounded-[2rem] flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-orange-600 shadow-sm"><Wallet size={32} /></div>
+                      <div>
+                        <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Saldo disponível</p>
+                        <h4 className="text-3xl font-black text-orange-900">{user.wallet.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</h4>
+                      </div>
+                    </div>
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                     <div className="space-y-6">
-                       <div className="space-y-3">
-                         <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Escolha a Operação:</Label>
-                         <div className="flex gap-4">
-                            <button 
-                              onClick={() => setWalletOperation("add")}
-                              className={`flex-1 flex items-center justify-center gap-2 h-14 rounded-2xl border-2 transition-all font-black uppercase text-[10px] tracking-widest
-                                ${walletOperation === 'add' ? 'bg-emerald-50 border-emerald-500 text-emerald-600 shadow-lg shadow-emerald-100' : 'bg-white border-slate-100 text-slate-400 hover:bg-slate-50'}
-                              `}
-                            >
-                              <ArrowUpCircle size={18} /> Adicionar
-                            </button>
-                            <button 
-                              onClick={() => setWalletOperation("subtract")}
-                              className={`flex-1 flex items-center justify-center gap-2 h-14 rounded-2xl border-2 transition-all font-black uppercase text-[10px] tracking-widest
-                                ${walletOperation === 'subtract' ? 'bg-red-50 border-red-500 text-red-600 shadow-lg shadow-red-100' : 'bg-white border-slate-100 text-slate-400 hover:bg-slate-50'}
-                              `}
-                            >
-                              <ArrowDownCircle size={18} /> Abater
-                            </button>
-                         </div>
-                       </div>
-
-                       <div className="space-y-2">
-                         <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Valor da Movimentação:</Label>
-                         <Input 
-                           value={walletAmount} 
-                           onChange={(e) => setWalletAmount(formatCurrency(e.target.value))} 
-                           onClick={handleWalletReset}
-                           className="h-14 rounded-2xl font-black text-xl text-center border-slate-200" 
-                         />
-                       </div>
-                       <div className="space-y-2">
-                         <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Descrição / Motivo:</Label>
-                         <Input 
-                          placeholder="Ex: Cashback de indicação ou Estorno de pedido" 
-                          value={walletDescription}
-                          onChange={(e) => setWalletDescription(e.target.value)}
-                          className="h-14 rounded-2xl font-bold" 
-                         />
-                       </div>
-                       <Button 
-                        onClick={handleWalletUpdate} 
-                        className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg transition-all active:scale-95
-                          ${walletOperation === 'add' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-100' : 'bg-red-600 hover:bg-red-700 shadow-red-100'}
-                        `}
-                       >
-                         {walletOperation === 'add' ? 'Adicionar Saldo Agora' : 'Confirmar Abatimento'}
-                       </Button>
+                      <div className="flex gap-4">
+                        <button onClick={() => setWalletOperation("add")} className={`flex-1 h-14 rounded-2xl border-2 font-black uppercase text-[10px] ${walletOperation === 'add' ? 'bg-emerald-50 border-emerald-500 text-emerald-600' : 'bg-white text-slate-400'}`}><ArrowUpCircle size={18} className="inline mr-2" /> Adicionar</button>
+                        <button onClick={() => setWalletOperation("subtract")} className={`flex-1 h-14 rounded-2xl border-2 font-black uppercase text-[10px] ${walletOperation === 'subtract' ? 'bg-red-50 border-red-500 text-red-600' : 'bg-white text-slate-400'}`}><ArrowDownCircle size={18} className="inline mr-2" /> Abater</button>
+                      </div>
+                      <Input value={walletAmount} onChange={(e) => setWalletAmount(e.target.value.replace(/\D/g, "").replace(/(\d+)(\d{2})$/, "R$ $1,$2"))} onClick={() => setWalletAmount("R$ 0,00")} className="h-14 rounded-2xl font-black text-xl text-center" />
+                      <Button onClick={handleWalletUpdate} className={`w-full h-14 rounded-2xl font-black uppercase text-[11px] ${walletOperation === 'add' ? 'bg-emerald-500' : 'bg-red-600'}`}>Confirmar Movimentação</Button>
                     </div>
-
-                    <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex flex-col justify-center text-center">
-                       <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Ação Rápida</h5>
-                       <p className="text-xs font-bold text-slate-500 mb-8 leading-relaxed">
-                        Ao clicar no campo de valor, o saldo volta automaticamente para R$ 0,00 para facilitar sua nova entrada.
-                       </p>
-                       <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          setWalletOperation("subtract");
-                          setWalletAmount(formatCurrency(userData.wallet.toFixed(2)));
-                          setWalletDescription("Zerar carteira administrativa");
-                        }}
-                        className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] text-red-500 border-red-100 hover:bg-red-50"
-                       >
-                        Zerar Carteira Total
-                       </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "transacoes" && (
-                <div className="space-y-8">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b pb-4">Histórico de Movimentações</h3>
-                  <div className="bg-slate-50 rounded-3xl border border-slate-100 overflow-hidden">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="bg-slate-100/50">
-                          <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Descrição</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Data</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        <tr>
-                          <td className="px-6 py-4">
-                            <Badge className="bg-emerald-100 text-emerald-600 border-none font-black text-[9px]">CRÉDITO</Badge>
-                          </td>
-                          <td className="px-6 py-4 text-xs font-bold text-slate-600">Cadastro de Boas-vindas</td>
-                          <td className="px-6 py-4 font-black text-slate-900">R$ 5,00</td>
-                          <td className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase">26/03/2026</td>
-                        </tr>
-                      </tbody>
-                    </table>
                   </div>
                 </div>
               )}
@@ -321,40 +216,26 @@ const UserDetailsPage = () => {
               {activeTab === "enderecos" && (
                 <div className="space-y-8">
                   <div className="flex justify-between items-center border-b pb-6">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Endereços do Cliente</h3>
-                    <Button onClick={() => setIsAddressOpen(true)} className="rounded-2xl font-black h-12 px-8 bg-slate-900 text-white hover:bg-black shadow-lg shadow-slate-100 uppercase text-[10px] tracking-widest">
-                      <Plus size={18} className="mr-2" /> Novo Endereço
-                    </Button>
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Endereços Salvos</h3>
+                    <Button onClick={() => { setEditingAddress(null); setAddressFormData({ zip: "", street: "", number: "", neighborhood: "", city: "", state: "" }); setIsAddressOpen(true); }} className="bg-slate-900 text-white rounded-xl h-12 px-6 font-black uppercase text-[10px]">Novo Endereço</Button>
                   </div>
-                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="rounded-[2.5rem] border-slate-100 bg-slate-50/50 overflow-hidden group hover:border-orange-200 transition-all">
-                      <div className="p-8 space-y-6">
-                        <div className="flex justify-between items-start">
-                          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-red-600 shadow-sm">
-                            <MapPin size={24} />
+                    {addresses.map(addr => (
+                      <Card key={addr.id} className="rounded-[2.5rem] p-8 space-y-4 bg-slate-50 border-slate-200">
+                        <div className="flex justify-between">
+                          <MapPin className="text-red-500" />
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => { setEditingAddress(addr); setAddressFormData(addr); setIsAddressOpen(true); }} className="h-8 w-8 bg-white rounded-lg shadow-sm"><Edit2 size={14} /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => removeAddress(addr.id)} className="h-8 w-8 bg-white text-red-500 rounded-lg shadow-sm"><Trash2 size={14} /></Button>
                           </div>
-                          <Badge className="bg-slate-900 text-white rounded-lg px-3 py-1 font-black text-[9px] uppercase">Principal</Badge>
                         </div>
                         <div>
-                          <p className="font-black text-slate-900 uppercase text-md">Rua Central, 500</p>
-                          <p className="text-xs font-bold text-slate-500">Centro - Lavras/MG</p>
-                          <p className="text-[10px] font-black text-slate-400 mt-2 uppercase">CEP: 37200-000</p>
+                          <p className="font-black text-slate-900 uppercase">{addr.street}, {addr.number}</p>
+                          <p className="text-xs text-slate-500">{addr.neighborhood} - {addr.city}/{addr.state}</p>
+                          <p className="text-[10px] font-black text-slate-400 mt-2">CEP: {addr.zip}</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                           <Button variant="outline" className="rounded-xl font-black text-[9px] uppercase h-10 bg-white">Editar</Button>
-                           <Button variant="outline" className="rounded-xl font-black text-[9px] uppercase h-10 bg-white text-red-500 hover:text-red-600">Remover</Button>
-                        </div>
-                        <a 
-                          href="https://www.google.com/maps" 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="flex items-center justify-center gap-2 w-full py-4 bg-slate-900 rounded-2xl text-[10px] font-black uppercase text-white hover:bg-black transition-all"
-                        >
-                          <ExternalLink size={14} /> Localizar no GPS
-                        </a>
-                      </div>
-                    </Card>
+                      </Card>
+                    ))}
                   </div>
                 </div>
               )}
@@ -363,38 +244,29 @@ const UserDetailsPage = () => {
         </div>
       </div>
 
-      {/* DIALOG DE NOVO ENDEREÇO */}
       <Dialog open={isAddressOpen} onOpenChange={setIsAddressOpen}>
         <DialogContent className="max-w-md rounded-[2.5rem] p-0 overflow-hidden">
-          <DialogHeader className="p-8 bg-slate-900 text-white">
-            <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-3">
-              <MapPinned className="text-orange-500" /> Novo Endereço
-            </DialogTitle>
-          </DialogHeader>
-          <div className="p-8 space-y-4">
-            <div className="space-y-1">
-              <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">CEP</Label>
-              <Input placeholder="00000-000" className="rounded-xl h-12 font-bold" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Rua / Logradouro</Label>
-              <Input placeholder="Ex: Av. Brasil" className="rounded-xl h-12 font-bold" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSaveAddress}>
+            <DialogHeader className="p-8 bg-slate-900 text-white"><DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-3"><MapPinned className="text-orange-500" /> {editingAddress ? 'Editar' : 'Novo'} Endereço</DialogTitle></DialogHeader>
+            <div className="p-8 space-y-4">
               <div className="space-y-1">
-                <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Número</Label>
-                <Input placeholder="Ex: 123" className="rounded-xl h-12 font-bold" />
+                <Label className="text-[10px] font-black text-slate-400 uppercase">CEP (padrão 00000-000)</Label>
+                <Input value={addressFormData.zip} onChange={(e) => handleCEPChange(e.target.value)} placeholder="00000-000" className="rounded-xl h-12 font-bold" required />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Bairro</Label>
-                <Input placeholder="Ex: Centro" className="rounded-xl h-12 font-bold" />
+                <Label className="text-[10px] font-black text-slate-400 uppercase">Logradouro</Label>
+                <Input value={addressFormData.street} onChange={(e) => setAddressFormData({...addressFormData, street: e.target.value})} placeholder="Rua..." className="rounded-xl h-12" required />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1"><Label className="text-[10px] font-black text-slate-400 uppercase">Número</Label><Input value={addressFormData.number} onChange={(e) => setAddressFormData({...addressFormData, number: e.target.value})} placeholder="123" className="rounded-xl h-12" required /></div>
+                <div className="space-y-1"><Label className="text-[10px] font-black text-slate-400 uppercase">Bairro</Label><Input value={addressFormData.neighborhood} onChange={(e) => setAddressFormData({...addressFormData, neighborhood: e.target.value})} placeholder="Centro" className="rounded-xl h-12" required /></div>
               </div>
             </div>
-          </div>
-          <DialogFooter className="p-8 bg-slate-50 border-t flex gap-3">
-            <Button variant="ghost" onClick={() => setIsAddressOpen(false)} className="rounded-xl font-bold uppercase text-[10px] h-12 flex-1">Cancelar</Button>
-            <Button onClick={() => { showSuccess("Endereço adicionado!"); setIsAddressOpen(false); }} className="bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-[10px] h-12 flex-1">Salvar Endereço</Button>
-          </DialogFooter>
+            <DialogFooter className="p-8 bg-slate-50 border-t flex gap-3">
+              <Button type="button" variant="ghost" onClick={() => setIsAddressOpen(false)} className="rounded-xl font-bold h-12 flex-1">Cancelar</Button>
+              <Button type="submit" className="bg-slate-900 text-white rounded-xl font-black h-12 flex-1">Salvar Endereço</Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </AdminLayout>
