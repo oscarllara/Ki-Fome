@@ -45,7 +45,9 @@ const INITIAL_ITEMS = [
     isRecommended: true,
     isPopular: true,
     isGourmet: false,
-    origin: "animal"
+    origin: "animal",
+    discountType: "percent",
+    discountValue: "10"
   },
   { 
     id: 9, 
@@ -58,7 +60,9 @@ const INITIAL_ITEMS = [
     isRecommended: false,
     isPopular: false,
     isGourmet: false,
-    origin: "animal"
+    origin: "animal",
+    discountType: "fixed",
+    discountValue: "0"
   },
 ];
 
@@ -72,6 +76,7 @@ const ItemsPage = () => {
   const [selectedOwner] = useState("Helio Junio");
   const [linkedStores, setLinkedStores] = useState<number[]>([]);
   const [promoType, setPromoType] = useState<"fixed" | "percent">("fixed");
+  const [promoValue, setPromoValue] = useState("");
   const [origin, setOrigin] = useState("animal");
   const [selectedComplements, setSelectedComplements] = useState<number[]>([]);
   const [features, setFeatures] = useState({ recommended: false, popular: false, gourmet: false });
@@ -79,6 +84,18 @@ const ItemsPage = () => {
   const filteredItems = useMemo(() => {
     return items.filter(item => item.name.toLowerCase().includes(search.toLowerCase()));
   }, [items, search]);
+
+  const calculateDiscountedPrice = (price: string, type: string, value: string) => {
+    const basePrice = parseFloat(price);
+    const discValue = parseFloat(value) || 0;
+    if (discValue === 0) return basePrice;
+
+    if (type === "fixed") {
+      return Math.max(0, basePrice - discValue);
+    } else {
+      return Math.max(0, basePrice * (1 - discValue / 100));
+    }
+  };
 
   const handleEdit = (item: any) => {
     setEditingItem(item);
@@ -89,6 +106,8 @@ const ItemsPage = () => {
       gourmet: item.isGourmet || false 
     });
     setOrigin(item.origin || "animal");
+    setPromoType(item.discountType || "fixed");
+    setPromoValue(item.discountValue || "");
     setView("form");
   };
 
@@ -97,7 +116,7 @@ const ItemsPage = () => {
       ...item,
       id: Math.max(...items.map(i => i.id)) + 1,
       name: `${item.name} (CÓPIA)`,
-      status: false // Por segurança, a cópia vem desativada
+      status: false
     };
     setItems([newItem, ...items]);
     showSuccess(`Produto "${item.name}" duplicado com sucesso!`);
@@ -108,6 +127,8 @@ const ItemsPage = () => {
     setLinkedStores([]);
     setFeatures({ recommended: false, popular: false, gourmet: false });
     setOrigin("animal");
+    setPromoType("fixed");
+    setPromoValue("");
     setView("form");
   };
 
@@ -142,7 +163,6 @@ const ItemsPage = () => {
           <div className="p-10 space-y-12">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
               
-              {/* COLUNA ESQUERDA: BÁSICO & FOTO */}
               <div className="lg:col-span-2 space-y-8">
                 <section className="space-y-4">
                   <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Imagem do Produto (Opcional)</Label>
@@ -190,7 +210,6 @@ const ItemsPage = () => {
                   </div>
                 </div>
 
-                {/* PROMOÇÃO EDITOR */}
                 <section className="bg-orange-50/50 p-8 rounded-[2.5rem] border border-orange-100 space-y-6">
                   <div className="flex items-center gap-2 mb-2">
                     <Percent className="text-orange-600" size={18} />
@@ -218,12 +237,16 @@ const ItemsPage = () => {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-orange-700 ml-1">Valor do Desconto</Label>
-                      <Input className="rounded-xl h-12 bg-white border-orange-100 font-black" placeholder={promoType === 'fixed' ? "0,00" : "0%"} />
+                      <Input 
+                        value={promoValue}
+                        onChange={(e) => setPromoValue(e.target.value)}
+                        className="rounded-xl h-12 bg-white border-orange-100 font-black" 
+                        placeholder={promoType === 'fixed' ? "0.00" : "x%"} 
+                      />
                     </div>
                   </div>
                 </section>
 
-                {/* ORIGEM DO PRODUTO */}
                 <section className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 space-y-6">
                   <div className="flex items-center gap-2 mb-2">
                     <Layers className="text-slate-500" size={18} />
@@ -252,9 +275,7 @@ const ItemsPage = () => {
                 </section>
               </div>
 
-              {/* COLUNA DIREITA: LOJAS, COMPLEMENTOS & BADGES */}
               <div className="space-y-8">
-                {/* SELOS DE DESTAQUE */}
                 <section className="bg-slate-900 p-8 rounded-[2.5rem] text-white space-y-6 shadow-xl shadow-slate-200">
                   <div className="flex items-center gap-2 mb-2">
                     <Star className="text-orange-400" size={18} />
@@ -275,23 +296,22 @@ const ItemsPage = () => {
 
                     <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
                       <div className="flex items-center gap-3">
-                        <Flame className={`transition-colors ${features.popular ? 'text-red-400 fill-red-400' : 'text-white/20'}`} size={20} />
+                        <Flame className={`transition-colors ${features.popular ? 'text-rose-500 fill-rose-500' : 'text-white/20'}`} size={20} />
                         <p className="text-[11px] font-black uppercase tracking-tight">POPULAR</p>
                       </div>
-                      <Switch checked={features.popular} onCheckedChange={(val) => setFeatures({...features, popular: val})} />
+                      <Switch checked={features.popular} onCheckedChange={(val) => setFeatures({...features, popular: val})} className="data-[state=checked]:bg-rose-600" />
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
                       <div className="flex items-center gap-3">
-                        <Diamond className={`transition-colors ${features.gourmet ? 'text-blue-400 fill-blue-400' : 'text-white/20'}`} size={20} />
+                        <Diamond className={`transition-colors ${features.gourmet ? 'text-indigo-400 fill-indigo-400' : 'text-white/20'}`} size={20} />
                         <p className="text-[11px] font-black uppercase tracking-tight">GOURMET</p>
                       </div>
-                      <Switch checked={features.gourmet} onCheckedChange={(val) => setFeatures({...features, gourmet: val})} />
+                      <Switch checked={features.gourmet} onCheckedChange={(val) => setFeatures({...features, gourmet: val})} className="data-[state=checked]:bg-indigo-600" />
                     </div>
                   </div>
                 </section>
 
-                {/* LOJAS VINCULADAS */}
                 <section className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Store className="text-orange-500" size={18} />
@@ -320,7 +340,6 @@ const ItemsPage = () => {
                   </div>
                 </section>
 
-                {/* COMPLEMENTOS */}
                 <section className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Plus className="text-emerald-500" size={18} />
@@ -343,15 +362,11 @@ const ItemsPage = () => {
                       </div>
                     ))}
                   </div>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase italic leading-tight">
-                    * Os grupos acima são definidos na aba "Complementos".
-                  </p>
                 </section>
               </div>
             </div>
           </div>
 
-          {/* RODAPÉ DO FORMULÁRIO */}
           <div className="p-8 bg-slate-900 flex flex-col md:flex-row justify-between items-center gap-4">
             <button type="button" onClick={() => setView("list")} className="text-white/40 hover:text-white font-black uppercase text-[10px] tracking-[0.2em] transition-colors">
               CANCELAR ALTERAÇÕES
@@ -404,70 +419,85 @@ const ItemsPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredItems.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="px-8 py-5 font-bold text-slate-300">#{item.id}</td>
-                  <td className="px-8 py-5">
-                    <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden border border-slate-100 bg-slate-100 shadow-sm">
-                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                    </div>
-                  </td>
-                  <td className="px-8 py-5">
-                    <div className="flex flex-col">
-                      <span className="font-black text-slate-900 uppercase group-hover:text-orange-600 transition-colors text-sm">{item.name}</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {item.stores?.map(sid => (
-                          <Badge key={sid} variant="secondary" className="bg-slate-100 text-slate-400 font-bold border-none text-[8px] uppercase px-1.5 py-0 h-4">
-                            {MOCK_STORES.find(s => s.id === sid)?.name}
-                          </Badge>
-                        ))}
+              {filteredItems.map((item) => {
+                const discountedPrice = calculateDiscountedPrice(item.price, item.discountType || 'fixed', item.discountValue || '0');
+                const hasDiscount = discountedPrice < parseFloat(item.price);
+
+                return (
+                  <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-8 py-5 font-bold text-slate-300">#{item.id}</td>
+                    <td className="px-8 py-5">
+                      <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden border border-slate-100 bg-slate-100 shadow-sm">
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-5">
-                    <div className="flex gap-1.5">
-                      {item.isRecommended && <Star size={14} className="text-orange-400 fill-orange-400" />}
-                      {item.isPopular && <Flame size={14} className="text-red-400 fill-red-400" />}
-                      {item.isGourmet && <Diamond size={14} className="text-blue-400 fill-blue-400" />}
-                      <Badge variant="outline" className={`text-[8px] font-black uppercase px-2 border-slate-200 ${item.origin === 'vegetal' ? 'text-green-600' : 'text-red-600'}`}>
-                        {item.origin}
-                      </Badge>
-                    </div>
-                  </td>
-                  <td className="px-8 py-5 font-black text-slate-900">R$ {item.price}</td>
-                  <td className="px-8 py-5 text-center">
-                    <button 
-                      onClick={() => toggleStatus(item.id)}
-                      className={`border-none font-black text-[9px] uppercase px-4 py-1.5 rounded-full transition-all active:scale-90
-                        ${item.status ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-red-100 text-red-600 hover:bg-red-200'}
-                      `}
-                    >
-                      {item.status ? 'ENABLED' : 'DISABLED'}
-                    </button>
-                  </td>
-                  <td className="px-8 py-5 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        onClick={() => handleDuplicate(item)}
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-12 w-12 bg-slate-100 text-slate-400 hover:bg-orange-600 hover:text-white rounded-2xl transition-all"
-                        title="Duplicar Produto"
+                    </td>
+                    <td className="px-8 py-5">
+                      <div className="flex flex-col">
+                        <span className="font-black text-slate-900 uppercase group-hover:text-orange-600 transition-colors text-sm">{item.name}</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {item.stores?.map(sid => (
+                            <Badge key={sid} variant="secondary" className="bg-slate-100 text-slate-400 font-bold border-none text-[8px] uppercase px-1.5 py-0 h-4">
+                              {MOCK_STORES.find(s => s.id === sid)?.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-5">
+                      <div className="flex gap-1.5">
+                        {item.isRecommended && <Star size={14} className="text-orange-400 fill-orange-400" />}
+                        {item.isPopular && <Flame size={14} className="text-rose-500 fill-rose-500" />}
+                        {item.isGourmet && <Diamond size={14} className="text-indigo-400 fill-indigo-400" />}
+                        <Badge variant="outline" className={`text-[8px] font-black uppercase px-2 border-slate-200 ${item.origin === 'vegetal' ? 'text-green-600' : 'text-red-600'}`}>
+                          {item.origin}
+                        </Badge>
+                      </div>
+                    </td>
+                    <td className="px-8 py-5">
+                      <div className="flex flex-col">
+                        {hasDiscount ? (
+                          <>
+                            <span className="text-[10px] font-bold text-slate-400 line-through">R$ {parseFloat(item.price).toFixed(2)}</span>
+                            <span className="font-black text-orange-600">R$ {discountedPrice.toFixed(2)}</span>
+                          </>
+                        ) : (
+                          <span className="font-black text-slate-900">R$ {parseFloat(item.price).toFixed(2)}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-8 py-5 text-center">
+                      <button 
+                        onClick={() => toggleStatus(item.id)}
+                        className={`border-none font-black text-[9px] uppercase px-4 py-1.5 rounded-full transition-all active:scale-90
+                          ${item.status ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-red-100 text-red-600 hover:bg-red-200'}
+                        `}
                       >
-                        <Copy size={18} />
-                      </Button>
-                      <Button 
-                        onClick={() => handleEdit(item)}
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-12 w-12 bg-slate-900 text-white hover:bg-black rounded-2xl shadow-lg shadow-slate-200"
-                      >
-                        <Edit2 size={18} />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {item.status ? 'ENABLED' : 'DISABLED'}
+                      </button>
+                    </td>
+                    <td className="px-8 py-5 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                          onClick={() => handleDuplicate(item)}
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-12 w-12 bg-slate-100 text-slate-400 hover:bg-orange-600 hover:text-white rounded-2xl transition-all"
+                        >
+                          <Copy size={18} />
+                        </Button>
+                        <Button 
+                          onClick={() => handleEdit(item)}
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-12 w-12 bg-slate-900 text-white hover:bg-black rounded-2xl shadow-lg shadow-slate-200"
+                        >
+                          <Edit2 size={18} />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
