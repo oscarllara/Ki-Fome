@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Plus, Search, UserPlus, ShieldAlert, 
-  Trash2, Download, UserCheck, Lock, Mail, Phone, User as UserIcon
+  Plus, Search, UserPlus, Trash2, Download, UserCheck, 
+  Mail, Phone, User as UserIcon, FileText
 } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import {
@@ -19,6 +19,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -27,6 +33,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const INITIAL_MOCK_USERS = [
   { id: 233, name: "Felipe Denis", email: "felipeacompanhamento@gmail.com", phone: "+55 (88) 99926-6723", role: "Cliente", wallet: 0, status: "Ativo" },
@@ -75,11 +83,47 @@ const UsersPage = () => {
   const filteredUsers = useMemo(() => {
     return users.filter(u => {
       const matchesSearch = u.name.toLowerCase().includes(search.toLowerCase()) || 
-                           u.email.toLowerCase().includes(search.toLowerCase());
+                           u.email.toLowerCase().includes(search.toLowerCase()) ||
+                           u.phone.includes(search);
       const matchesRole = !currentFilterRole || u.role === currentFilterRole;
       return matchesSearch && matchesRole;
     });
   }, [users, search, currentFilterRole]);
+
+  // Exportar CSV
+  const exportToCSV = () => {
+    const headers = ["Nome", "Email", "Telefone", "Função", "Carteira", "Status"];
+    const rows = filteredUsers.map(u => [
+      u.name, u.email, u.phone, u.role, u.wallet, u.status
+    ]);
+    
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `usuarios-kifome-${new Date().getTime()}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showSuccess("Relatório CSV gerado!");
+  };
+
+  // Exportar PDF
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Relatório de Usuários - KIFOME", 14, 15);
+    autoTable(doc, {
+      head: [['Nome', 'E-mail', 'Celular', 'Função', 'Carteira']],
+      body: filteredUsers.map(u => [u.name, u.email, u.phone, u.role, `R$ ${u.wallet.toFixed(2)}`]),
+      startY: 20,
+      theme: 'grid',
+      headStyles: { fillColor: [234, 88, 12] } // Cor laranja
+    });
+    doc.save(`usuarios-kifome-${new Date().getTime()}.pdf`);
+    showSuccess("Relatório PDF gerado!");
+  };
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,20 +152,6 @@ const UsersPage = () => {
     } else {
       showError("Senha administrativa incorreta!");
     }
-  };
-
-  const handlePhoneChange = (val: string) => {
-    let v = val.replace(/\D/g, "");
-    if (v.length > 11) v = v.substring(0, 11);
-    if (v.length > 2) {
-      v = `+55 (${v.substring(0, 2)}) ${v.substring(2)}`;
-    } else if (v.length > 0) {
-      v = `+55 (${v}`;
-    }
-    if (v.length > 10) {
-      v = v.substring(0, 10) + "-" + v.substring(10);
-    }
-    setFormData({ ...formData, phone: v });
   };
 
   return (
@@ -156,9 +186,22 @@ const UsersPage = () => {
               className="pl-12 h-14 bg-white rounded-2xl border-slate-200 font-bold"
             />
           </div>
-          <Button onClick={() => showSuccess("CSV de usuários gerado!")} variant="outline" className="h-14 rounded-2xl font-bold gap-2 border-slate-200 text-slate-500 px-6">
-             <Download size={18} /> Exportar CSV
-          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-14 rounded-2xl font-bold gap-2 border-slate-200 text-slate-500 px-8 transition-all active:scale-95">
+                <Download size={18} /> Exportar Relatório
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="rounded-2xl p-2 w-48" align="end">
+              <DropdownMenuItem onClick={exportToCSV} className="rounded-xl p-3 font-bold cursor-pointer gap-2">
+                <FileText size={16} className="text-slate-400" /> Exportar para CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToPDF} className="rounded-xl p-3 font-bold cursor-pointer gap-2">
+                <FileText size={16} className="text-red-500" /> Exportar para PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="overflow-x-auto">
@@ -176,9 +219,13 @@ const UsersPage = () => {
             <tbody className="divide-y divide-slate-50">
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-slate-50/80 transition-all group">
-                  <td className="px-8 py-6 font-black text-slate-900 uppercase text-sm">{user.name}</td>
+                  <td className="px-8 py-6">
+                    <span className="font-black text-slate-900 uppercase text-sm block">{user.name}</span>
+                  </td>
                   <td className="px-8 py-6 text-sm font-medium text-slate-500">{user.email}</td>
-                  <td className="px-8 py-6 text-sm font-black text-slate-700">{user.phone}</td>
+                  <td className="px-8 py-6">
+                    <span className="text-sm font-black text-slate-700 whitespace-nowrap">{user.phone}</span>
+                  </td>
                   <td className="px-8 py-6">
                     <div className="flex flex-col gap-1">
                       <Badge variant="outline" className="rounded-lg text-[9px] font-black uppercase tracking-widest border-slate-200 bg-white text-slate-500">Cliente</Badge>
@@ -192,7 +239,7 @@ const UsersPage = () => {
                   </td>
                   <td className="px-8 py-6 text-right">
                     <div className="flex justify-end gap-3">
-                      <Button onClick={() => navigate(`/admin/users/edit/${user.id}`)} className="bg-slate-900 hover:bg-black text-white rounded-xl h-10 px-6 font-black text-[10px] uppercase shadow-sm">Visualizar Perfil</Button>
+                      <Button onClick={() => navigate(`/admin/users/edit/${user.id}`)} className="bg-slate-900 hover:bg-black text-white rounded-xl h-10 px-6 font-black text-[10px] uppercase shadow-sm active:scale-95 transition-all">Visualizar Perfil</Button>
                       <Button onClick={() => { setUserToDelete(user); setAdminPass(""); setIsDeleteOpen(true); }} className="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-10 w-10 p-0 transition-all"><Trash2 size={18} /></Button>
                     </div>
                   </td>
@@ -203,12 +250,12 @@ const UsersPage = () => {
         </div>
       </div>
 
+      {/* MODAIS (MANTIDOS DA VERSÃO ANTERIOR) */}
       <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
         <DialogContent className="max-w-xl rounded-[2.5rem] p-0 overflow-hidden shadow-2xl">
           <form onSubmit={handleCreateUser}>
             <DialogHeader className="p-8 bg-slate-900 text-white">
               <DialogTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-3"><UserCheck className="text-orange-500" /> Registro Completo</DialogTitle>
-              <DialogDescription className="text-slate-400 text-xs font-bold uppercase tracking-widest">Cadastro automático com perfil de Cliente incluso.</DialogDescription>
             </DialogHeader>
             <div className="p-10 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -222,25 +269,12 @@ const UsersPage = () => {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">WhatsApp</Label>
-                  <Input placeholder="+55 (xx) xxxxx-xxxx" className="rounded-xl h-12 font-bold" value={formData.phone} onChange={(e) => handlePhoneChange(e.target.value)} required />
+                  <Input placeholder="+55 (88) 99999-9999" className="rounded-xl h-12 font-bold" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Senha</Label>
                   <Input type="password" placeholder="••••••••" className="rounded-xl h-12 font-bold" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required />
                 </div>
-              </div>
-              <div className="space-y-1.5 pt-2">
-                <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Função Adicional</Label>
-                <Select value={newUserRole} onValueChange={setNewUserRole}>
-                  <SelectTrigger className="h-12 rounded-xl font-black uppercase text-[10px] tracking-widest"><SelectValue /></SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    <SelectItem value="Cliente" className="font-bold">Apenas Cliente</SelectItem>
-                    <SelectItem value="Parceiro" className="font-bold">Parceiro</SelectItem>
-                    <SelectItem value="Proprietário" className="font-bold">Proprietário</SelectItem>
-                    <SelectItem value="Entregador" className="font-bold">Entregador</SelectItem>
-                    <SelectItem value="Funcionário" className="font-bold">Funcionário</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
             <DialogFooter className="p-8 bg-slate-50 border-t flex gap-4">
@@ -255,7 +289,6 @@ const UsersPage = () => {
         <DialogContent className="max-w-md rounded-[2rem] p-8">
           <DialogHeader>
             <DialogTitle className="text-xl font-black uppercase text-red-600">Excluir Usuário</DialogTitle>
-            <DialogDescription className="text-slate-500 font-bold">Deseja excluir <span className="text-slate-900">{userToDelete?.name}</span>?</DialogDescription>
           </DialogHeader>
           <div className="py-6 space-y-4">
             <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Senha Master</Label>
