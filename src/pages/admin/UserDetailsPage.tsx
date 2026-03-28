@@ -12,7 +12,7 @@ import {
   User, Shield, Wallet, History, ShoppingBag, MapPin, 
   ArrowLeft, Plus, MapPinned, ArrowUpCircle, ArrowDownCircle, 
   Trash2, Edit2, CheckCircle2, Ban, Eye, EyeOff, Save,
-  TrendingUp, CreditCard, Calendar, Search, RefreshCw, XCircle
+  TrendingUp, CreditCard, Calendar, RefreshCw
 } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import {
@@ -42,17 +42,8 @@ const UserDetailsPage = () => {
   const [addresses, setAddresses] = useState<any[]>([]);
   const [isAddressOpen, setIsAddressOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
-  const [isLoadingCep, setIsLoadingCep] = useState(false);
   const [addressFormData, setAddressFormData] = useState({ 
-    id: 0,
-    nickname: "", 
-    zip: "", 
-    street: "", 
-    number: "", 
-    neighborhood: "", 
-    city: "", 
-    state: "",
-    complement: ""
+    id: 0, nickname: "", zip: "", street: "", number: "", neighborhood: "", city: "", state: "", complement: ""
   });
 
   useEffect(() => {
@@ -65,11 +56,11 @@ const UserDetailsPage = () => {
       setUsers(parsed);
       const found = parsed.find((u: any) => u.id === Number(id));
       if (found) {
-        // Garantir que campos novos existam
         setUser({
           ...found,
           status: found.status || "Ativo",
-          permissions: found.permissions || ["order", "coupons"]
+          permissions: found.permissions || ["order", "coupons"],
+          password: found.password || "********"
         });
       }
     }
@@ -89,19 +80,24 @@ const UserDetailsPage = () => {
     showSuccess("Perfil atualizado com sucesso!");
   };
 
+  // FUNÇÃO DE RESETAR SENHA REAL
   const handleResetPassword = () => {
-    showSuccess("Uma nova senha temporária foi enviada para o e-mail do usuário.");
+    const tempPass = "123456"; // Senha padrão de reset
+    const updatedUser = { ...user, password: tempPass };
+    setUser(updatedUser);
+    saveToLocal(updatedUser);
+    showSuccess(`Senha resetada com sucesso! A nova senha temporária é: ${tempPass}`);
   };
 
+  // FUNÇÃO DE STATUS REAL
   const toggleAccountStatus = () => {
     const newStatus = user.status === "Ativo" ? "Inativo" : "Ativo";
     const updatedUser = { ...user, status: newStatus };
     setUser(updatedUser);
     saveToLocal(updatedUser);
-    showSuccess(`Conta agora está ${newStatus}`);
+    showSuccess(`O status do usuário foi alterado para: ${newStatus}`);
   };
 
-  // Máscara de Moeda R$ 0,00
   const handleWalletAmountChange = (value: string) => {
     const digits = value.replace(/\D/g, "");
     if (!digits) {
@@ -249,11 +245,12 @@ const UserDetailsPage = () => {
                       <Input value={user.phone} onChange={(e) => setUser({...user, phone: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-lg focus:ring-2 focus:ring-orange-500/20" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Alterar Senha</Label>
+                      <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Senha Atual</Label>
                       <div className="relative">
                         <Input 
                           type={showPass ? "text" : "password"} 
-                          placeholder="••••••••" 
+                          value={user.password}
+                          readOnly
                           className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-lg pr-14 focus:ring-2 focus:ring-orange-500/20" 
                         />
                         <button 
@@ -272,14 +269,14 @@ const UserDetailsPage = () => {
                       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 shadow-sm"><Shield size={20} /></div>
                       <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Segurança</p>
-                        <p className="text-xs font-bold text-slate-600">Último login registrado em: <span className="text-slate-900">27/03/2024 às 14:20</span></p>
+                        <p className="text-xs font-bold text-slate-600">Status da conta: <span className={`font-black ${user.status === 'Ativo' ? 'text-green-600' : 'text-red-600'}`}>{user.status.toUpperCase()}</span></p>
                       </div>
                     </div>
                     <button 
                       onClick={toggleAccountStatus}
                       className={`px-4 py-1.5 rounded-full font-black uppercase text-[9px] transition-all active:scale-95 ${user.status === 'Ativo' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}
                     >
-                      Conta {user.status}
+                      {user.status === 'Ativo' ? 'Desativar' : 'Ativar'}
                     </button>
                   </div>
                 </div>
