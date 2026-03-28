@@ -18,6 +18,8 @@ import ItemsPage from "./pages/admin/ItemsPage";
 import UsersPage from "./pages/admin/UsersPage";
 import UserDetailsPage from "./pages/admin/UserDetailsPage";
 import GenericAdminPage from "./pages/admin/GenericAdminPage";
+import OrdersListPage from "./pages/admin/OrdersListPage";
+import LiveOrdersPage from "./pages/admin/LiveOrdersPage";
 
 const queryClient = new QueryClient();
 
@@ -52,8 +54,8 @@ const App = () => (
           <Route path="/admin/users/edit/:id" element={<UserDetailsPage />} />
           
           {/* Pedidos */}
-          <Route path="/admin/orders/list" element={<GenericAdminPage title="Lista de Pedidos" />} />
-          <Route path="/admin/orders/live" element={<GenericAdminPage title="Pedidos ao Vivo" />} />
+          <Route path="/admin/orders/list" element={<OrdersListPage />} />
+          <Route path="/admin/orders/live" element={<LiveOrdersPage />} />
           
           {/* Relatórios */}
           <Route path="/admin/reports/client" element={<GenericAdminPage title="Relatório de Clientes" />} />
