@@ -20,6 +20,7 @@ import UserDetailsPage from "./pages/admin/UserDetailsPage";
 import GenericAdminPage from "./pages/admin/GenericAdminPage";
 import OrdersListPage from "./pages/admin/OrdersListPage";
 import LiveOrdersPage from "./pages/admin/LiveOrdersPage";
+import OrderManagerPage from "./pages/admin/OrderManagerPage";
 import SlidesPage from "./pages/admin/SlidesPage";
 import CouponsPage from "./pages/admin/CouponsPage";
 import PushNotificationsPage from "./pages/admin/PushNotificationsPage";
@@ -61,6 +62,7 @@ const App = () => (
           {/* Pedidos */}
           <Route path="/admin/orders/list" element={<OrdersListPage />} />
           <Route path="/admin/orders/live" element={<LiveOrdersPage />} />
+          <Route path="/admin/orders/manager" element={<OrderManagerPage />} />
           
           {/* Relatórios */}
           <Route path="/admin/reports/client" element={<GenericAdminPage title="Relatório de Clientes" />} />
