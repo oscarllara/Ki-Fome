@@ -20,6 +20,7 @@ import UserDetailsPage from "./pages/admin/UserDetailsPage";
 import GenericAdminPage from "./pages/admin/GenericAdminPage";
 import OrdersListPage from "./pages/admin/OrdersListPage";
 import LiveOrdersPage from "./pages/admin/LiveOrdersPage";
+import SlidesPage from "./pages/admin/SlidesPage";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,12 @@ const App = () => (
           {/* Relatórios */}
           <Route path="/admin/reports/client" element={<GenericAdminPage title="Relatório de Clientes" />} />
           <Route path="/admin/reports/store" element={<GenericAdminPage title="Relatório de Lojas" />} />
+          
+          {/* Promoções */}
+          <Route path="/admin/promos/slides" element={<SlidesPage />} />
+          <Route path="/admin/promos/cat-slides" element={<SlidesPage />} />
+          <Route path="/admin/promos/coupons" element={<GenericAdminPage title="Cupons de Desconto" />} />
+          <Route path="/admin/promos/push" element={<GenericAdminPage title="Enviar Push" />} />
           
           {/* Configurações */}
           <Route path="/admin/settings/zones" element={<GenericAdminPage title="Zonas (Franquias)" />} />
