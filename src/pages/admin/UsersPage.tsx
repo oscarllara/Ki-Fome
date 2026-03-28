@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
   Plus, Search, UserPlus, Trash2, Download, UserCheck, 
-  Mail, Phone, User as UserIcon, FileText
+  Mail, Phone, User as UserIcon, FileText, Lock, Wallet, Shield
 } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import {
@@ -50,7 +50,6 @@ const UsersPage = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [adminPass, setAdminPass] = useState("");
-  const [newUserRole, setNewUserRole] = useState("Cliente");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -59,6 +58,9 @@ const UsersPage = () => {
     email: "",
     phone: "",
     password: "",
+    role: "Cliente",
+    initialWallet: "R$ 0,00",
+    walletDescription: ""
   });
 
   useEffect(() => {
@@ -90,27 +92,18 @@ const UsersPage = () => {
     });
   }, [users, search, currentFilterRole]);
 
-  // Exportar CSV
   const exportToCSV = () => {
     const headers = ["Nome", "Email", "Telefone", "Função", "Carteira", "Status"];
-    const rows = filteredUsers.map(u => [
-      u.name, u.email, u.phone, u.role, u.wallet, u.status
-    ]);
-    
+    const rows = filteredUsers.map(u => [u.name, u.email, u.phone, u.role, u.wallet, u.status]);
     const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `usuarios-kifome-${new Date().getTime()}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
+    link.href = URL.createObjectURL(blob);
+    link.download = `usuarios-kifome.csv`;
     link.click();
-    document.body.removeChild(link);
-    showSuccess("Relatório CSV gerado!");
+    showSuccess("CSV gerado!");
   };
 
-  // Exportar PDF
   const exportToPDF = () => {
     const doc = new jsPDF();
     doc.text("Relatório de Usuários - KIFOME", 14, 15);
@@ -118,28 +111,44 @@ const UsersPage = () => {
       head: [['Nome', 'E-mail', 'Celular', 'Função', 'Carteira']],
       body: filteredUsers.map(u => [u.name, u.email, u.phone, u.role, `R$ ${u.wallet.toFixed(2)}`]),
       startY: 20,
-      theme: 'grid',
-      headStyles: { fillColor: [234, 88, 12] } // Cor laranja
+      headStyles: { fillColor: [234, 88, 12] }
     });
-    doc.save(`usuarios-kifome-${new Date().getTime()}.pdf`);
-    showSuccess("Relatório PDF gerado!");
+    doc.save(`usuarios-kifome.pdf`);
+    showSuccess("PDF gerado!");
   };
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
+    const walletValue = parseFloat(formData.initialWallet.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
+    
     const newUser = {
       id: Math.floor(Math.random() * 1000) + 300,
-      ...formData,
-      role: newUserRole,
-      wallet: 0,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      role: formData.role,
+      wallet: walletValue,
       status: "Ativo"
     };
+
     const updatedUsers = [newUser, ...users];
     setUsers(updatedUsers);
     localStorage.setItem("kifome_users", JSON.stringify(updatedUsers));
+
+    if (walletValue > 0) {
+      const trans = [{
+        id: Date.now(),
+        type: "CRÉDITO",
+        amount: walletValue,
+        description: formData.walletDescription || "Saldo inicial de cadastro",
+        date: new Date().toLocaleDateString("pt-BR")
+      }];
+      localStorage.setItem(`kifome_trans_${newUser.id}`, JSON.stringify(trans));
+    }
+
     showSuccess(`${formData.name} cadastrado com sucesso!`);
     setIsAddUserOpen(false);
-    setFormData({ name: "", email: "", phone: "", password: "" });
+    setFormData({ name: "", email: "", phone: "", password: "", role: "Cliente", initialWallet: "R$ 0,00", walletDescription: "" });
   };
 
   const confirmDelete = () => {
@@ -165,10 +174,10 @@ const UsersPage = () => {
             <p className="text-slate-500 font-medium">Controle total sobre os acessos do KIFOME.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => { setNewUserRole("Cliente"); setIsAddUserOpen(true); }} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-12 gap-2 shadow-lg shadow-emerald-100">
+            <Button onClick={() => { setFormData({...formData, role: "Cliente"}); setIsAddUserOpen(true); }} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-12 gap-2 shadow-lg shadow-emerald-100">
               <UserPlus size={18} /> Cadastrar Cliente
             </Button>
-            <Button onClick={() => { setNewUserRole("Parceiro"); setIsAddUserOpen(true); }} className="bg-slate-900 hover:bg-black text-white rounded-xl font-bold h-12 gap-2 shadow-lg shadow-slate-200">
+            <Button onClick={() => { setFormData({...formData, role: "Parceiro"}); setIsAddUserOpen(true); }} className="bg-slate-900 hover:bg-black text-white rounded-xl font-bold h-12 gap-2 shadow-lg shadow-slate-200">
               <Plus size={18} /> Novo Usuário Especial
             </Button>
           </div>
@@ -219,27 +228,18 @@ const UsersPage = () => {
             <tbody className="divide-y divide-slate-50">
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-slate-50/80 transition-all group">
-                  <td className="px-8 py-6">
-                    <span className="font-black text-slate-900 uppercase text-sm block">{user.name}</span>
-                  </td>
+                  <td className="px-8 py-6 font-black text-slate-900 uppercase text-sm">{user.name}</td>
                   <td className="px-8 py-6 text-sm font-medium text-slate-500">{user.email}</td>
+                  <td className="px-8 py-6 text-sm font-black text-slate-700 whitespace-nowrap">{user.phone}</td>
                   <td className="px-8 py-6">
-                    <span className="text-sm font-black text-slate-700 whitespace-nowrap">{user.phone}</span>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex flex-col gap-1">
-                      <Badge variant="outline" className="rounded-lg text-[9px] font-black uppercase tracking-widest border-slate-200 bg-white text-slate-500">Cliente</Badge>
-                      {user.role !== "Cliente" && (
-                        <Badge variant="outline" className="rounded-lg text-[9px] font-black uppercase tracking-widest border-orange-200 bg-orange-50 text-orange-600">{user.role}</Badge>
-                      )}
-                    </div>
+                    <Badge variant="outline" className="rounded-lg text-[9px] font-black uppercase tracking-widest border-orange-200 bg-orange-50 text-orange-600">{user.role}</Badge>
                   </td>
                   <td className="px-8 py-6 font-black text-emerald-600">
                     {user.wallet.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                   </td>
                   <td className="px-8 py-6 text-right">
                     <div className="flex justify-end gap-3">
-                      <Button onClick={() => navigate(`/admin/users/edit/${user.id}`)} className="bg-slate-900 hover:bg-black text-white rounded-xl h-10 px-6 font-black text-[10px] uppercase shadow-sm active:scale-95 transition-all">Visualizar Perfil</Button>
+                      <Button onClick={() => navigate(`/admin/users/edit/${user.id}`)} className="bg-slate-900 hover:bg-black text-white rounded-xl h-10 px-6 font-black text-[10px] uppercase shadow-sm">Visualizar Perfil</Button>
                       <Button onClick={() => { setUserToDelete(user); setAdminPass(""); setIsDeleteOpen(true); }} className="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-10 w-10 p-0 transition-all"><Trash2 size={18} /></Button>
                     </div>
                   </td>
@@ -250,36 +250,88 @@ const UsersPage = () => {
         </div>
       </div>
 
-      {/* MODAIS (MANTIDOS DA VERSÃO ANTERIOR) */}
+      {/* MODAL DE CADASTRO COMPLETO */}
       <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
-        <DialogContent className="max-w-xl rounded-[2.5rem] p-0 overflow-hidden shadow-2xl">
+        <DialogContent className="max-w-3xl rounded-[2.5rem] p-0 overflow-hidden shadow-2xl">
           <form onSubmit={handleCreateUser}>
             <DialogHeader className="p-8 bg-slate-900 text-white">
-              <DialogTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-3"><UserCheck className="text-orange-500" /> Registro Completo</DialogTitle>
+              <DialogTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-3"><UserCheck className="text-orange-500" /> Ficha de Cadastro Completa</DialogTitle>
+              <DialogDescription className="text-slate-400 text-xs font-bold uppercase tracking-widest">Preencha todos os dados para o novo usuário.</DialogDescription>
             </DialogHeader>
-            <div className="p-10 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nome Completo</Label>
-                  <Input placeholder="Ex: João da Silva" className="rounded-xl h-12 font-bold" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+            
+            <div className="p-10 space-y-10 max-h-[70vh] overflow-y-auto no-scrollbar">
+              {/* Seção 1: Dados Pessoais */}
+              <section className="space-y-6">
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <UserIcon size={16} className="text-orange-500" />
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dados Pessoais</h3>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">E-mail</Label>
-                  <Input type="email" placeholder="joao@exemplo.com" className="rounded-xl h-12 font-bold" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nome Completo</Label>
+                    <Input placeholder="Ex: João da Silva" className="rounded-xl h-12 font-bold" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">E-mail</Label>
+                    <Input type="email" placeholder="joao@exemplo.com" className="rounded-xl h-12 font-bold" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">WhatsApp</Label>
+                    <Input placeholder="+55 (88) 99999-9999" className="rounded-xl h-12 font-bold" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Senha de Acesso</Label>
+                    <Input type="password" placeholder="••••••••" className="rounded-xl h-12 font-bold" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required />
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">WhatsApp</Label>
-                  <Input placeholder="+55 (88) 99999-9999" className="rounded-xl h-12 font-bold" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required />
+              </section>
+
+              {/* Seção 2: Função */}
+              <section className="space-y-6">
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <Shield size={16} className="text-orange-500" />
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Atribuição de Função</h3>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Senha</Label>
-                  <Input type="password" placeholder="••••••••" className="rounded-xl h-12 font-bold" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required />
+                <div className="max-w-md">
+                  <Select value={formData.role} onValueChange={(val) => setFormData({...formData, role: val})}>
+                    <SelectTrigger className="h-12 rounded-xl font-black uppercase text-[10px] tracking-widest"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="Cliente" className="font-bold">Cliente</SelectItem>
+                      <SelectItem value="Parceiro" className="font-bold">Parceiro</SelectItem>
+                      <SelectItem value="Proprietário" className="font-bold">Proprietário de Loja</SelectItem>
+                      <SelectItem value="Entregador" className="font-bold">Entregador</SelectItem>
+                      <SelectItem value="Funcionário" className="font-bold">Funcionário</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
+              </section>
+
+              {/* Seção 3: Carteira Inicial */}
+              <section className="space-y-6">
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <Wallet size={16} className="text-orange-500" />
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Carteira Inicial (Opcional)</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Saldo Inicial</Label>
+                    <Input 
+                      value={formData.initialWallet} 
+                      onChange={(e) => setFormData({...formData, initialWallet: e.target.value.replace(/\D/g, "").replace(/(\d+)(\d{2})$/, "R$ $1,$2")})} 
+                      className="rounded-xl h-12 font-black text-emerald-600" 
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Motivo do Saldo</Label>
+                    <Input placeholder="Ex: Bônus de boas-vindas" className="rounded-xl h-12 font-bold" value={formData.walletDescription} onChange={(e) => setFormData({ ...formData, walletDescription: e.target.value })} />
+                  </div>
+                </div>
+              </section>
             </div>
+
             <DialogFooter className="p-8 bg-slate-50 border-t flex gap-4">
               <Button type="button" variant="ghost" onClick={() => setIsAddUserOpen(false)} className="rounded-xl font-bold uppercase text-[10px] h-12 flex-1">Cancelar</Button>
-              <Button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] h-12 flex-1">Confirmar Cadastro</Button>
+              <Button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-black uppercase tracking-widest text-[10px] h-12 flex-1 shadow-xl shadow-orange-100">Finalizar Cadastro</Button>
             </DialogFooter>
           </form>
         </DialogContent>
