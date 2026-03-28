@@ -21,6 +21,8 @@ import GenericAdminPage from "./pages/admin/GenericAdminPage";
 import OrdersListPage from "./pages/admin/OrdersListPage";
 import LiveOrdersPage from "./pages/admin/LiveOrdersPage";
 import SlidesPage from "./pages/admin/SlidesPage";
+import CouponsPage from "./pages/admin/CouponsPage";
+import PushNotificationsPage from "./pages/admin/PushNotificationsPage";
 
 const queryClient = new QueryClient();
 
@@ -65,8 +67,8 @@ const App = () => (
           {/* Promoções */}
           <Route path="/admin/promos/slides" element={<SlidesPage />} />
           <Route path="/admin/promos/cat-slides" element={<SlidesPage />} />
-          <Route path="/admin/promos/coupons" element={<GenericAdminPage title="Cupons de Desconto" />} />
-          <Route path="/admin/promos/push" element={<GenericAdminPage title="Enviar Push" />} />
+          <Route path="/admin/promos/coupons" element={<CouponsPage />} />
+          <Route path="/admin/promos/push" element={<PushNotificationsPage />} />
           
           {/* Configurações */}
           <Route path="/admin/settings/zones" element={<GenericAdminPage title="Zonas (Franquias)" />} />
