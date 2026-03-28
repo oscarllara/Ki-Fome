@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, ShoppingCart, Utensils, ShoppingBag, User, Bell, CheckCircle2 } from "lucide-react";
+import { Search, MapPin, ShoppingCart, Utensils, ShoppingBag, User, Bell, CheckCircle2, Plus } from "lucide-react";
 import RestaurantCard from "@/components/RestaurantCard";
 import {
   Dialog,
@@ -55,10 +55,13 @@ const DeliveryApp = () => {
     if (savedAddr) {
       const parsed = JSON.parse(savedAddr);
       setAddresses(parsed);
-      setSelectedAddress(parsed.find((a: any) => a.isDefault) || parsed[0]);
-    } else {
-      const defaultAddr = { street: "Rua Central", number: "500", neighborhood: "Centro" };
+      const defaultAddr = parsed.find((a: any) => a.isDefault) || parsed[0];
       setSelectedAddress(defaultAddr);
+      
+      // Se não tiver endereço, abre o modal
+      if (parsed.length === 0) setIsAddressModalOpen(true);
+    } else {
+      setIsAddressModalOpen(true);
     }
   }, []);
 
@@ -67,12 +70,18 @@ const DeliveryApp = () => {
       {/* Top Header */}
       <header className="bg-white px-6 pt-8 pb-6 sticky top-0 z-50 shadow-sm border-b border-slate-50">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex flex-col cursor-pointer" onClick={() => setIsAddressModalOpen(true)}>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Entregar em</span>
+          <div className="flex flex-col cursor-pointer group" onClick={() => setIsAddressModalOpen(true)}>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-orange-600 transition-colors">Entregar em</span>
             <div className="flex items-center gap-1">
               <MapPin className="text-orange-600" size={16} />
               <span className="font-black text-sm text-slate-900">
-                {selectedAddress ? `${selectedAddress.street}, ${selectedAddress.number}` : "Selecione um endereço"}
+                {selectedAddress ? (
+                  <span className="flex items-center gap-2">
+                    <span className="text-orange-600">{selectedAddress.nickname || "Endereço"}</span>
+                    <span className="text-slate-300">•</span>
+                    <span>{selectedAddress.street}, {selectedAddress.number}</span>
+                  </span>
+                ) : "Selecione um endereço"}
               </span>
             </div>
           </div>
@@ -132,30 +141,38 @@ const DeliveryApp = () => {
       <Dialog open={isAddressModalOpen} onOpenChange={setIsAddressModalOpen}>
         <DialogContent className="max-w-md rounded-[2.5rem] p-8">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black uppercase tracking-tight">Meus Endereços</DialogTitle>
-            <DialogDescription className="text-xs font-bold text-slate-400 uppercase">Escolha onde deseja receber seu pedido</DialogDescription>
+            <DialogTitle className="text-xl font-black uppercase tracking-tight">Onde vamos entregar?</DialogTitle>
+            <DialogDescription className="text-xs font-bold text-slate-400 uppercase">Selecione um endereço para ver as lojas da sua região</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 pt-6">
-            {addresses.map((addr) => (
-              <button 
-                key={addr.id}
-                onClick={() => { setSelectedAddress(addr); setIsAddressModalOpen(false); }}
-                className={`w-full p-6 rounded-3xl border text-left flex items-center justify-between transition-all active:scale-95
-                  ${selectedAddress?.id === addr.id ? 'bg-orange-50 border-orange-500 shadow-lg shadow-orange-100' : 'bg-slate-50 border-slate-100'}
-                `}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedAddress?.id === addr.id ? 'bg-orange-500 text-white' : 'bg-white text-slate-400'}`}>
-                    <MapPin size={20} />
+          <div className="space-y-3 pt-6 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
+            {addresses.length > 0 ? (
+              addresses.map((addr) => (
+                <button 
+                  key={addr.id}
+                  onClick={() => { setSelectedAddress(addr); setIsAddressModalOpen(false); }}
+                  className={`w-full p-6 rounded-3xl border text-left flex items-center justify-between transition-all active:scale-95
+                    ${selectedAddress?.id === addr.id ? 'bg-orange-50 border-orange-500 shadow-lg shadow-orange-100' : 'bg-slate-50 border-slate-100'}
+                  `}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedAddress?.id === addr.id ? 'bg-orange-500 text-white' : 'bg-white text-slate-400'}`}>
+                      <MapPin size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">{addr.nickname || "Endereço"}</p>
+                      <p className="font-black text-slate-900 uppercase text-xs">{addr.street}, {addr.number}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">{addr.neighborhood} - {addr.city}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-black text-slate-900 uppercase text-xs">{addr.street}, {addr.number}</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">{addr.neighborhood} - {addr.city}</p>
-                  </div>
-                </div>
-                {selectedAddress?.id === addr.id && <CheckCircle2 size={20} className="text-orange-500" />}
-              </button>
-            ))}
+                  {selectedAddress?.id === addr.id && <CheckCircle2 size={20} className="text-orange-500" />}
+                </button>
+              ))
+            ) : (
+              <div className="text-center py-10">
+                <MapPin size={48} className="mx-auto text-slate-200 mb-4" />
+                <p className="text-sm font-black text-slate-400 uppercase">Nenhum endereço salvo</p>
+              </div>
+            )}
           </div>
           <Button className="w-full mt-6 h-14 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-widest text-[10px]">
             <Plus size={16} className="mr-2" /> Adicionar Novo Endereço

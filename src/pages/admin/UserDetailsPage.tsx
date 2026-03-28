@@ -12,7 +12,7 @@ import {
   User, Shield, Wallet, History, ShoppingBag, MapPin, 
   ArrowLeft, Plus, MapPinned, ArrowUpCircle, ArrowDownCircle, 
   Trash2, Edit2, CheckCircle2, Ban, Eye, EyeOff, Save,
-  TrendingUp, CreditCard, Calendar
+  TrendingUp, CreditCard, Calendar, Search
 } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import {
@@ -41,7 +41,18 @@ const UserDetailsPage = () => {
   const [addresses, setAddresses] = useState<any[]>([]);
   const [isAddressOpen, setIsAddressOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
-  const [addressFormData, setAddressFormData] = useState({ zip: "", street: "", number: "", neighborhood: "", city: "", state: "" });
+  const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const [addressFormData, setAddressFormData] = useState({ 
+    id: 0,
+    nickname: "", 
+    zip: "", 
+    street: "", 
+    number: "", 
+    neighborhood: "", 
+    city: "", 
+    state: "",
+    complement: ""
+  });
 
   useEffect(() => {
     const savedUsers = localStorage.getItem("kifome_users");
@@ -68,6 +79,59 @@ const UserDetailsPage = () => {
   const handleUpdateUser = () => {
     saveToLocal(user);
     showSuccess("Perfil atualizado com sucesso!");
+  };
+
+  // Busca CEP
+  const handleCepBlur = async () => {
+    const cep = addressFormData.zip.replace(/\D/g, "");
+    if (cep.length !== 8) return;
+
+    setIsLoadingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await response.json();
+      
+      if (data.erro) {
+        showError("CEP não encontrado.");
+      } else {
+        setAddressFormData(prev => ({
+          ...prev,
+          street: data.logradouro,
+          neighborhood: data.bairro,
+          city: data.localidade,
+          state: data.uf
+        }));
+        showSuccess("Endereço preenchido!");
+      }
+    } catch (err) {
+      showError("Erro ao buscar CEP.");
+    } finally {
+      setIsLoadingCep(false);
+    }
+  };
+
+  const handleSaveAddress = (e: React.FormEvent) => {
+    e.preventDefault();
+    let updatedAddresses;
+    
+    if (editingAddress) {
+      updatedAddresses = addresses.map(a => a.id === editingAddress.id ? { ...addressFormData } : a);
+    } else {
+      const newAddress = { ...addressFormData, id: Date.now() };
+      updatedAddresses = [newAddress, ...addresses];
+    }
+
+    setAddresses(updatedAddresses);
+    localStorage.setItem(`kifome_addr_${id}`, JSON.stringify(updatedAddresses));
+    showSuccess(editingAddress ? "Endereço atualizado!" : "Endereço adicionado!");
+    setIsAddressOpen(false);
+  };
+
+  const handleDeleteAddress = (addrId: number) => {
+    const updated = addresses.filter(a => a.id !== addrId);
+    setAddresses(updated);
+    localStorage.setItem(`kifome_addr_${id}`, JSON.stringify(updated));
+    showSuccess("Endereço removido.");
   };
 
   const handleWalletUpdate = () => {
@@ -135,7 +199,6 @@ const UserDetailsPage = () => {
       </header>
 
       <div className="flex flex-col lg:flex-row gap-10 pb-20">
-        {/* Sidebar Moderna */}
         <aside className="w-full lg:w-80 shrink-0">
           <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-4 space-y-2 sticky top-28">
             {tabs.map((tab) => (
@@ -162,7 +225,6 @@ const UserDetailsPage = () => {
           </div>
         </aside>
 
-        {/* Conteúdo Principal */}
         <div className="flex-1">
           <Card className="border-none shadow-sm rounded-[3rem] overflow-hidden bg-white">
             <CardContent className="p-12">
@@ -204,17 +266,6 @@ const UserDetailsPage = () => {
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 shadow-sm"><Shield size={20} /></div>
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Segurança</p>
-                        <p className="text-xs font-bold text-slate-600">Último login registrado em: <span className="text-slate-900">27/03/2024 às 14:20</span></p>
-                      </div>
-                    </div>
-                    <Badge className="bg-green-100 text-green-600 border-none font-black uppercase text-[9px] px-3 py-1">Conta Ativa</Badge>
-                  </div>
                 </div>
               )}
 
@@ -242,32 +293,6 @@ const UserDetailsPage = () => {
                           </SelectContent>
                         </Select>
                       </div>
-                      
-                      <div className="p-6 bg-blue-50/50 rounded-[2rem] border border-blue-100">
-                        <p className="text-xs font-bold text-blue-700 leading-relaxed">
-                          Alterar a função do usuário impacta diretamente nas permissões de acesso ao aplicativo e painéis administrativos.
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Permissões Ativas</Label>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
-                          <CheckCircle2 className="text-green-500" size={18} />
-                          <span className="text-xs font-black text-slate-700 uppercase">Fazer Pedidos</span>
-                        </div>
-                        <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
-                          <CheckCircle2 className="text-green-500" size={18} />
-                          <span className="text-xs font-black text-slate-700 uppercase">Usar Cupons</span>
-                        </div>
-                        {user.role === 'Proprietário' && (
-                          <div className="flex items-center gap-3 p-4 bg-orange-50 rounded-2xl border border-orange-100">
-                            <CheckCircle2 className="text-orange-500" size={18} />
-                            <span className="text-xs font-black text-orange-700 uppercase">Gerenciar Loja</span>
-                          </div>
-                        )}
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -290,58 +315,36 @@ const UserDetailsPage = () => {
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                    {/* Ajuste de Saldo */}
                     <div className="space-y-8 bg-slate-50 p-10 rounded-[3rem] border border-slate-100">
                       <h4 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em]">Movimentar Carteira</h4>
                       <div className="space-y-6">
                         <div className="flex bg-white rounded-2xl p-1.5 border border-slate-200">
-                          <button 
-                            onClick={() => setWalletOperation("add")}
-                            className={`flex-1 h-12 rounded-xl font-black uppercase text-[10px] transition-all ${walletOperation === 'add' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-100' : 'text-slate-400 hover:text-slate-600'}`}
-                          >
+                          <button onClick={() => setWalletOperation("add")} className={`flex-1 h-12 rounded-xl font-black uppercase text-[10px] transition-all ${walletOperation === 'add' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-100' : 'text-slate-400 hover:text-slate-600'}`}>
                             <Plus size={16} className="inline mr-2" /> Adicionar
                           </button>
-                          <button 
-                            onClick={() => setWalletOperation("subtract")}
-                            className={`flex-1 h-12 rounded-xl font-black uppercase text-[10px] transition-all ${walletOperation === 'subtract' ? 'bg-red-500 text-white shadow-lg shadow-red-100' : 'text-slate-400 hover:text-slate-600'}`}
-                          >
+                          <button onClick={() => setWalletOperation("subtract")} className={`flex-1 h-12 rounded-xl font-black uppercase text-[10px] transition-all ${walletOperation === 'subtract' ? 'bg-red-500 text-white shadow-lg shadow-red-100' : 'text-slate-400 hover:text-slate-600'}`}>
                             <Trash2 size={16} className="inline mr-2" /> Abater
                           </button>
                         </div>
-                        
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Valor da Operação</Label>
-                          <Input 
-                            placeholder="R$ 0,00" 
-                            value={walletAmount}
-                            onChange={(e) => setWalletAmount(e.target.value.replace(/\D/g, "").replace(/(\d+)(\d{2})$/, "R$ $1,$2"))}
-                            className="h-16 rounded-2xl bg-white border-none font-black text-2xl text-center focus:ring-2 focus:ring-orange-500/20" 
-                          />
+                          <Input placeholder="R$ 0,00" value={walletAmount} onChange={(e) => setWalletAmount(e.target.value.replace(/\D/g, "").replace(/(\d+)(\d{2})$/, "R$ $1,$2"))} className="h-16 rounded-2xl bg-white border-none font-black text-2xl text-center" />
                         </div>
-                        
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Motivo / Descrição</Label>
-                          <Input 
-                            placeholder="Ex: Estorno de pedido #1234" 
-                            value={walletDescription}
-                            onChange={(e) => setWalletDescription(e.target.value)}
-                            className="h-14 rounded-2xl bg-white border-none font-bold focus:ring-2 focus:ring-orange-500/20" 
-                          />
+                          <Input placeholder="Ex: Estorno de pedido #1234" value={walletDescription} onChange={(e) => setWalletDescription(e.target.value)} className="h-14 rounded-2xl bg-white border-none font-bold" />
                         </div>
-                        
                         <Button onClick={handleWalletUpdate} className={`w-full h-16 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl transition-all active:scale-95 ${walletOperation === 'add' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-100' : 'bg-red-600 hover:bg-red-700 shadow-red-100'}`}>
                           Confirmar Movimentação
                         </Button>
                       </div>
                     </div>
 
-                    {/* Histórico Rápido */}
                     <div className="space-y-6">
                       <div className="flex justify-between items-center">
                         <h4 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em]">Últimas Transações</h4>
                         <History size={18} className="text-slate-300" />
                       </div>
-                      
                       <ScrollArea className="h-[400px] pr-4">
                         <div className="space-y-3">
                           {transactions.length > 0 ? (
@@ -353,10 +356,7 @@ const UserDetailsPage = () => {
                                   </div>
                                   <div>
                                     <p className="text-sm font-black text-slate-900 uppercase leading-tight">{t.description}</p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <Calendar size={12} className="text-slate-300" />
-                                      <p className="text-[10px] text-slate-400 font-bold">{t.date}</p>
-                                    </div>
+                                    <p className="text-[10px] text-slate-400 font-bold">{t.date}</p>
                                   </div>
                                 </div>
                                 <span className={`text-lg font-black ${t.type === 'CRÉDITO' ? 'text-emerald-600' : 'text-red-600'}`}>
@@ -377,23 +377,6 @@ const UserDetailsPage = () => {
                 </div>
               )}
 
-              {activeTab === "pedidos" && (
-                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600"><ShoppingBag size={24} /></div>
-                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Histórico de Pedidos</h3>
-                  </div>
-                  
-                  <div className="flex flex-col items-center justify-center py-24 bg-slate-50 rounded-[3rem] border border-dashed border-slate-200">
-                    <div className="w-20 h-20 bg-white rounded-[2rem] flex items-center justify-center text-slate-200 mb-6 shadow-sm">
-                      <ShoppingBag size={40} />
-                    </div>
-                    <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Nenhum pedido realizado ainda</p>
-                    <p className="text-xs font-bold text-slate-300 mt-2">Os pedidos feitos no App aparecerão aqui.</p>
-                  </div>
-                </div>
-              )}
-
               {activeTab === "enderecos" && (
                 <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
                   <div className="flex justify-between items-center">
@@ -401,7 +384,11 @@ const UserDetailsPage = () => {
                       <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-600"><MapPin size={24} /></div>
                       <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Endereços Cadastrados</h3>
                     </div>
-                    <Button onClick={() => { setEditingAddress(null); setAddressFormData({ zip: "", street: "", number: "", neighborhood: "", city: "", state: "" }); setIsAddressOpen(true); }} className="bg-slate-900 hover:bg-black text-white rounded-2xl h-12 px-6 font-black uppercase text-[10px] tracking-widest">
+                    <Button onClick={() => { 
+                      setEditingAddress(null); 
+                      setAddressFormData({ id: 0, nickname: "", zip: "", street: "", number: "", neighborhood: "", city: "", state: "", complement: "" }); 
+                      setIsAddressOpen(true); 
+                    }} className="bg-slate-900 hover:bg-black text-white rounded-2xl h-12 px-6 font-black uppercase text-[10px] tracking-widest">
                       <Plus size={18} className="mr-2" /> Novo Endereço
                     </Button>
                   </div>
@@ -412,16 +399,21 @@ const UserDetailsPage = () => {
                         <div key={addr.id} className="bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100 group hover:border-orange-200 transition-all relative overflow-hidden">
                           <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full -mr-10 -mt-10"></div>
                           <div className="flex justify-between items-start mb-6 relative z-10">
-                            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-red-500 shadow-sm">
-                              <MapPinned size={24} />
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-red-500 shadow-sm">
+                                <MapPinned size={24} />
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">{addr.nickname || "Endereço"}</p>
+                                <p className="text-lg font-black text-slate-900 uppercase leading-tight">{addr.street}, {addr.number}</p>
+                              </div>
                             </div>
                             <div className="flex gap-2">
                               <Button variant="ghost" size="icon" onClick={() => { setEditingAddress(addr); setAddressFormData(addr); setIsAddressOpen(true); }} className="h-10 w-10 bg-white rounded-xl shadow-sm hover:bg-orange-600 hover:text-white transition-all"><Edit2 size={16} /></Button>
-                              <Button variant="ghost" size="icon" className="h-10 w-10 bg-white text-red-500 rounded-xl shadow-sm hover:bg-red-600 hover:text-white transition-all"><Trash2 size={16} /></Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleDeleteAddress(addr.id)} className="h-10 w-10 bg-white text-red-500 rounded-xl shadow-sm hover:bg-red-600 hover:text-white transition-all"><Trash2 size={16} /></Button>
                             </div>
                           </div>
                           <div className="relative z-10">
-                            <p className="text-lg font-black text-slate-900 uppercase leading-tight">{addr.street}, {addr.number}</p>
                             <p className="text-sm font-bold text-slate-500 mt-1">{addr.neighborhood} • {addr.city}/{addr.state}</p>
                             <div className="mt-4 inline-flex items-center gap-2 bg-white px-3 py-1 rounded-lg border border-slate-100">
                               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">CEP:</span>
@@ -443,25 +435,65 @@ const UserDetailsPage = () => {
         </div>
       </div>
 
-      {/* MODAL DE ENDEREÇO (MANTIDO FUNCIONAL) */}
+      {/* MODAL DE ENDEREÇO COM BUSCA CEP */}
       <Dialog open={isAddressOpen} onOpenChange={setIsAddressOpen}>
-        <DialogContent className="max-w-md rounded-[3rem] p-0 overflow-hidden shadow-2xl">
-          <form>
+        <DialogContent className="max-w-2xl rounded-[3rem] p-0 overflow-hidden shadow-2xl">
+          <form onSubmit={handleSaveAddress}>
             <DialogHeader className="p-10 bg-slate-900 text-white">
               <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-3"><MapPinned className="text-orange-500" /> {editingAddress ? 'Editar' : 'Novo'} Endereço</DialogTitle>
+              <DialogDescription className="text-slate-400 text-xs font-bold uppercase">Preencha o CEP para busca automática.</DialogDescription>
             </DialogHeader>
             <div className="p-10 space-y-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">CEP</Label>
-                <Input value={addressFormData.zip} onChange={(e) => setAddressFormData({...addressFormData, zip: e.target.value})} placeholder="00000-000" className="rounded-2xl h-14 font-bold" required />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Apelido (Ex: Casa, Trabalho)</Label>
+                  <Input value={addressFormData.nickname} onChange={(e) => setAddressFormData({...addressFormData, nickname: e.target.value})} placeholder="Ex: Minha Casa" className="rounded-2xl h-14 font-bold" required />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">CEP</Label>
+                  <div className="relative">
+                    <Input 
+                      value={addressFormData.zip} 
+                      onChange={(e) => setAddressFormData({...addressFormData, zip: e.target.value})} 
+                      onBlur={handleCepBlur}
+                      placeholder="00000-000" 
+                      className="rounded-2xl h-14 font-bold pr-12" 
+                      required 
+                    />
+                    {isLoadingCep && <div className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-orange-500"><Search size={18} /></div>}
+                  </div>
+                </div>
               </div>
+
               <div className="space-y-2">
                 <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Rua / Logradouro</Label>
                 <Input value={addressFormData.street} onChange={(e) => setAddressFormData({...addressFormData, street: e.target.value})} placeholder="Ex: Av. Central" className="rounded-2xl h-14 font-bold" required />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Número</Label><Input value={addressFormData.number} onChange={(e) => setAddressFormData({...addressFormData, number: e.target.value})} className="rounded-2xl h-14 font-bold" required /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Bairro</Label><Input value={addressFormData.neighborhood} onChange={(e) => setAddressFormData({...addressFormData, neighborhood: e.target.value})} className="rounded-2xl h-14 font-bold" required /></div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Número</Label>
+                  <Input value={addressFormData.number} onChange={(e) => setAddressFormData({...addressFormData, number: e.target.value})} className="rounded-2xl h-14 font-bold" required />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Complemento</Label>
+                  <Input value={addressFormData.complement} onChange={(e) => setAddressFormData({...addressFormData, complement: e.target.value})} placeholder="Apto, Bloco, etc." className="rounded-2xl h-14 font-bold" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Bairro</Label>
+                  <Input value={addressFormData.neighborhood} onChange={(e) => setAddressFormData({...addressFormData, neighborhood: e.target.value})} className="rounded-2xl h-14 font-bold" required />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Cidade</Label>
+                  <Input value={addressFormData.city} onChange={(e) => setAddressFormData({...addressFormData, city: e.target.value})} className="rounded-2xl h-14 font-bold" required />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Estado (UF)</Label>
+                  <Input value={addressFormData.state} onChange={(e) => setAddressFormData({...addressFormData, state: e.target.value})} className="rounded-2xl h-14 font-bold" required />
+                </div>
               </div>
             </div>
             <DialogFooter className="p-10 bg-slate-50 border-t flex gap-4">
