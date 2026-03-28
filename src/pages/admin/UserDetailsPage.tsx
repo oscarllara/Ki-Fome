@@ -12,7 +12,7 @@ import {
   User, Shield, Wallet, History, ShoppingBag, MapPin, 
   ArrowLeft, Plus, MapPinned, ArrowUpCircle, ArrowDownCircle, 
   Trash2, Edit2, CheckCircle2, Ban, Eye, EyeOff, Save,
-  TrendingUp, CreditCard, Calendar, RefreshCw, AlertTriangle
+  TrendingUp, CreditCard, Calendar, RefreshCw, AlertTriangle, Loader2
 } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import {
@@ -43,6 +43,7 @@ const UserDetailsPage = () => {
   const [addresses, setAddresses] = useState<any[]>([]);
   const [isAddressOpen, setIsAddressOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
+  const [isLoadingCep, setIsLoadingCep] = useState(false);
   const [addressFormData, setAddressFormData] = useState({ 
     id: 0, nickname: "", zip: "", street: "", number: "", neighborhood: "", city: "", state: "", complement: ""
   });
@@ -146,6 +147,62 @@ const UserDetailsPage = () => {
       ? currentPerms.filter((p: string) => p !== perm)
       : [...currentPerms, perm];
     setUser({ ...user, permissions: newPerms });
+  };
+
+  // API DE CEP (ViaCEP)
+  const handleCepBlur = async () => {
+    const cep = addressFormData.zip.replace(/\D/g, "");
+    if (cep.length !== 8) return;
+
+    setIsLoadingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await response.json();
+      
+      if (data.erro) {
+        showError("CEP não encontrado.");
+      } else {
+        setAddressFormData({
+          ...addressFormData,
+          street: data.logradouro,
+          neighborhood: data.bairro,
+          city: data.localidade,
+          state: data.uf
+        });
+        showSuccess("Endereço preenchido automaticamente!");
+      }
+    } catch (error) {
+      showError("Erro ao buscar CEP.");
+    } finally {
+      setIsLoadingCep(false);
+    }
+  };
+
+  const handleSaveAddress = (e: React.FormEvent) => {
+    e.preventDefault();
+    let updatedAddresses;
+    
+    if (editingAddress) {
+      updatedAddresses = addresses.map(a => a.id === editingAddress.id ? addressFormData : a);
+      showSuccess("Endereço atualizado!");
+    } else {
+      const newAddr = { ...addressFormData, id: Date.now() };
+      updatedAddresses = [newAddr, ...addresses];
+      showSuccess("Endereço cadastrado!");
+    }
+
+    setAddresses(updatedAddresses);
+    localStorage.setItem(`kifome_addr_${id}`, JSON.stringify(updatedAddresses));
+    setIsAddressOpen(false);
+  };
+
+  const handleDeleteAddress = (addrId: number) => {
+    if (window.confirm("Deseja excluir este endereço?")) {
+      const updated = addresses.filter(a => a.id !== addrId);
+      setAddresses(updated);
+      localStorage.setItem(`kifome_addr_${id}`, JSON.stringify(updated));
+      showSuccess("Endereço removido.");
+    }
   };
 
   const tabs = [
@@ -474,7 +531,7 @@ const UserDetailsPage = () => {
                             </div>
                             <div className="flex gap-2">
                               <Button variant="ghost" size="icon" onClick={() => { setEditingAddress(addr); setAddressFormData(addr); setIsAddressOpen(true); }} className="h-10 w-10 bg-white rounded-xl shadow-sm hover:bg-orange-600 hover:text-white transition-all"><Edit2 size={16} /></Button>
-                              <Button variant="ghost" size="icon" className="h-10 w-10 bg-white text-red-500 rounded-xl shadow-sm hover:bg-red-600 hover:text-white transition-all"><Trash2 size={16} /></Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleDeleteAddress(addr.id)} className="h-10 w-10 bg-white text-red-500 rounded-xl shadow-sm hover:bg-red-600 hover:text-white transition-all"><Trash2 size={16} /></Button>
                             </div>
                           </div>
                           <div className="relative z-10">
@@ -524,30 +581,79 @@ const UserDetailsPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* MODAL DE ENDEREÇO (MANTIDO FUNCIONAL) */}
+      {/* MODAL DE ENDEREÇO COMPLETO COM API DE CEP */}
       <Dialog open={isAddressOpen} onOpenChange={setIsAddressOpen}>
-        <DialogContent className="max-w-md rounded-[3rem] p-0 overflow-hidden shadow-2xl">
-          <form>
+        <DialogContent className="max-w-2xl rounded-[3rem] p-0 overflow-hidden shadow-2xl">
+          <form onSubmit={handleSaveAddress}>
             <DialogHeader className="p-10 bg-slate-900 text-white">
-              <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-3"><MapPinned className="text-orange-500" /> {editingAddress ? 'Editar' : 'Novo'} Endereço</DialogTitle>
+              <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-3">
+                <MapPinned className="text-orange-500" /> {editingAddress ? 'Editar' : 'Novo'} Endereço
+              </DialogTitle>
+              <DialogDescription className="text-slate-400 text-xs font-bold uppercase">
+                Preencha o CEP para carregar os dados automaticamente.
+              </DialogDescription>
             </DialogHeader>
-            <div className="p-10 space-y-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">CEP</Label>
-                <Input value={addressFormData.zip} onChange={(e) => setAddressFormData({...addressFormData, zip: e.target.value})} placeholder="00000-000" className="rounded-2xl h-14 font-bold" required />
+            
+            <div className="p-10 space-y-6 max-h-[60vh] overflow-y-auto no-scrollbar">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Apelido (Ex: Casa, Trabalho)</Label>
+                  <Input value={addressFormData.nickname} onChange={(e) => setAddressFormData({...addressFormData, nickname: e.target.value})} placeholder="Ex: Minha Casa" className="rounded-2xl h-14 font-bold" required />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">CEP</Label>
+                  <div className="relative">
+                    <Input 
+                      value={addressFormData.zip} 
+                      onChange={(e) => setAddressFormData({...addressFormData, zip: e.target.value})} 
+                      onBlur={handleCepBlur}
+                      placeholder="00000-000" 
+                      className="rounded-2xl h-14 font-bold pr-12" 
+                      required 
+                    />
+                    {isLoadingCep && <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-orange-500" size={20} />}
+                  </div>
+                </div>
               </div>
+
               <div className="space-y-2">
                 <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Rua / Logradouro</Label>
                 <Input value={addressFormData.street} onChange={(e) => setAddressFormData({...addressFormData, street: e.target.value})} placeholder="Ex: Av. Central" className="rounded-2xl h-14 font-bold" required />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Número</Label><Input value={addressFormData.number} onChange={(e) => setAddressFormData({...addressFormData, number: e.target.value})} className="rounded-2xl h-14 font-bold" required /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Bairro</Label><Input value={addressFormData.neighborhood} onChange={(e) => setAddressFormData({...addressFormData, neighborhood: e.target.value})} className="rounded-2xl h-14 font-bold" required /></div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Número</Label>
+                  <Input value={addressFormData.number} onChange={(e) => setAddressFormData({...addressFormData, number: e.target.value})} className="rounded-2xl h-14 font-bold" required />
+                </div>
+                <div className="md:col-span-2 space-y-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Bairro</Label>
+                  <Input value={addressFormData.neighborhood} onChange={(e) => setAddressFormData({...addressFormData, neighborhood: e.target.value})} className="rounded-2xl h-14 font-bold" required />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Cidade</Label>
+                  <Input value={addressFormData.city} onChange={(e) => setAddressFormData({...addressFormData, city: e.target.value})} className="rounded-2xl h-14 font-bold" required />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Estado (UF)</Label>
+                  <Input value={addressFormData.state} onChange={(e) => setAddressFormData({...addressFormData, state: e.target.value})} maxLength={2} className="rounded-2xl h-14 font-bold uppercase" required />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Complemento (Opcional)</Label>
+                <Input value={addressFormData.complement} onChange={(e) => setAddressFormData({...addressFormData, complement: e.target.value})} placeholder="Ex: Apto 101, Bloco B" className="rounded-2xl h-14 font-bold" />
               </div>
             </div>
+
             <DialogFooter className="p-10 bg-slate-50 border-t flex gap-4">
               <Button type="button" variant="ghost" onClick={() => setIsAddressOpen(false)} className="rounded-2xl font-bold h-14 flex-1 uppercase text-[10px]">Cancelar</Button>
-              <Button type="submit" className="bg-slate-900 text-white rounded-2xl font-black h-14 flex-1 uppercase text-[10px] tracking-widest">Salvar Endereço</Button>
+              <Button type="submit" className="bg-slate-900 text-white rounded-2xl font-black h-14 flex-1 uppercase text-[10px] tracking-widest">
+                {editingAddress ? 'Salvar Alterações' : 'Cadastrar Endereço'}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
