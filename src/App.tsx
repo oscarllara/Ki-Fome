@@ -21,11 +21,16 @@ import GenericAdminPage from "./pages/admin/GenericAdminPage";
 import OrdersListPage from "./pages/admin/OrdersListPage";
 import LiveOrdersPage from "./pages/admin/LiveOrdersPage";
 import OrderManagerPage from "./pages/admin/OrderManagerPage";
+import TableManagerPage from "./pages/admin/TableManagerPage";
 import SlidesPage from "./pages/admin/SlidesPage";
 import CouponsPage from "./pages/admin/CouponsPage";
 import PushNotificationsPage from "./pages/admin/PushNotificationsPage";
 import TransactionsPage from "./pages/admin/TransactionsPage";
 import WalletPage from "./pages/admin/WalletPage";
+
+// Apps Específicos
+import WaiterApp from "./pages/WaiterApp";
+import TableOrderApp from "./pages/TableOrderApp";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +46,10 @@ const App = () => (
           <Route path="/public" element={<PublicPortal />} />
           <Route path="/delivery" element={<DeliveryApp />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          
+          {/* Apps de Salão */}
+          <Route path="/waiter" element={<WaiterApp />} />
+          <Route path="/table/:tableId" element={<TableOrderApp />} />
           
           {/* Rotas Master Admin */}
           <Route path="/admin/stores" element={<StoresPage />} />
@@ -59,10 +68,11 @@ const App = () => (
           <Route path="/admin/users/partners" element={<UsersPage />} />
           <Route path="/admin/users/edit/:id" element={<UserDetailsPage />} />
           
-          {/* Pedidos */}
+          {/* Pedidos & Salão */}
           <Route path="/admin/orders/list" element={<OrdersListPage />} />
           <Route path="/admin/orders/live" element={<LiveOrdersPage />} />
           <Route path="/admin/orders/manager" element={<OrderManagerPage />} />
+          <Route path="/admin/orders/tables" element={<TableManagerPage />} />
           
           {/* Relatórios */}
           <Route path="/admin/reports/client" element={<GenericAdminPage title="Relatório de Clientes" />} />

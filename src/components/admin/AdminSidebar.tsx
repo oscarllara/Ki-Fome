@@ -5,7 +5,7 @@ import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, Store, UtensilsCrossed, Users, Clock, 
   FileText, Megaphone, Wallet, Settings, ChevronDown, 
-  ChevronRight, LogOut, ShieldCheck, LayoutList
+  ChevronRight, LogOut, ShieldCheck, LayoutList, Coffee
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,7 @@ const MENU_STRUCTURE: NavItem[] = [
       { title: "Painel de Controle", href: "/admin/orders/manager" },
       { title: "Lista de Pedidos", href: "/admin/orders/list" },
       { title: "Pedidos ao vivo", href: "/admin/orders/live" },
+      { title: "Gestão de Mesas", href: "/admin/orders/tables" },
     ]
   },
   { 
