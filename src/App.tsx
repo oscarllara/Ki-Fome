@@ -23,6 +23,8 @@ import LiveOrdersPage from "./pages/admin/LiveOrdersPage";
 import SlidesPage from "./pages/admin/SlidesPage";
 import CouponsPage from "./pages/admin/CouponsPage";
 import PushNotificationsPage from "./pages/admin/PushNotificationsPage";
+import TransactionsPage from "./pages/admin/TransactionsPage";
+import WalletPage from "./pages/admin/WalletPage";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +71,10 @@ const App = () => (
           <Route path="/admin/promos/cat-slides" element={<SlidesPage />} />
           <Route path="/admin/promos/coupons" element={<CouponsPage />} />
           <Route path="/admin/promos/push" element={<PushNotificationsPage />} />
+          
+          {/* Transações & Carteiras */}
+          <Route path="/admin/transactions/payments" element={<TransactionsPage />} />
+          <Route path="/admin/transactions/wallet" element={<WalletPage />} />
           
           {/* Configurações */}
           <Route path="/admin/settings/zones" element={<GenericAdminPage title="Zonas (Franquias)" />} />
