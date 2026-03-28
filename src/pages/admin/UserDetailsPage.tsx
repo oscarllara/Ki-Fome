@@ -12,7 +12,7 @@ import {
   User, Shield, Wallet, History, ShoppingBag, MapPin, 
   ArrowLeft, Plus, MapPinned, ArrowUpCircle, ArrowDownCircle, 
   Trash2, Edit2, CheckCircle2, Ban, Eye, EyeOff, Save,
-  TrendingUp, CreditCard, Calendar, RefreshCw
+  TrendingUp, CreditCard, Calendar, RefreshCw, AlertTriangle
 } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import {
@@ -31,6 +31,7 @@ const UserDetailsPage = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const [showPass, setShowPass] = useState(false);
+  const [isBanModalOpen, setIsBanModalOpen] = useState(false);
   
   // Carteira
   const [walletAmount, setWalletAmount] = useState("R$ 0,00");
@@ -60,7 +61,7 @@ const UserDetailsPage = () => {
           ...found,
           status: found.status || "Ativo",
           permissions: found.permissions || ["order", "coupons"],
-          password: found.password || "********"
+          password: found.password || "123456"
         });
       }
     }
@@ -80,22 +81,21 @@ const UserDetailsPage = () => {
     showSuccess("Perfil atualizado com sucesso!");
   };
 
-  // FUNÇÃO DE RESETAR SENHA REAL
   const handleResetPassword = () => {
-    const tempPass = "123456"; // Senha padrão de reset
+    const tempPass = "123456";
     const updatedUser = { ...user, password: tempPass };
     setUser(updatedUser);
     saveToLocal(updatedUser);
-    showSuccess(`Senha resetada com sucesso! A nova senha temporária é: ${tempPass}`);
+    showSuccess(`Senha resetada! Nova senha: ${tempPass}`);
   };
 
-  // FUNÇÃO DE STATUS REAL
-  const toggleAccountStatus = () => {
-    const newStatus = user.status === "Ativo" ? "Inativo" : "Ativo";
+  const handleConfirmBan = () => {
+    const newStatus = user.status === "Ativo" ? "Banido" : "Ativo";
     const updatedUser = { ...user, status: newStatus };
     setUser(updatedUser);
     saveToLocal(updatedUser);
-    showSuccess(`O status do usuário foi alterado para: ${newStatus}`);
+    setIsBanModalOpen(false);
+    showSuccess(newStatus === "Banido" ? "Usuário banido do sistema!" : "Usuário reativado!");
   };
 
   const handleWalletAmountChange = (value: string) => {
@@ -209,7 +209,7 @@ const UserDetailsPage = () => {
             <div className="pt-6 mt-6 border-t border-slate-50">
               <Button 
                 variant="ghost" 
-                onClick={toggleAccountStatus}
+                onClick={() => setIsBanModalOpen(true)}
                 className={`w-full justify-start gap-4 px-6 py-4 h-auto rounded-[1.5rem] font-black uppercase tracking-tight text-sm transition-colors ${user.status === 'Ativo' ? 'text-red-500 hover:bg-red-50' : 'text-emerald-500 hover:bg-emerald-50'}`}
               >
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${user.status === 'Ativo' ? 'bg-red-100' : 'bg-emerald-100'}`}>
@@ -273,10 +273,10 @@ const UserDetailsPage = () => {
                       </div>
                     </div>
                     <button 
-                      onClick={toggleAccountStatus}
+                      onClick={() => setIsBanModalOpen(true)}
                       className={`px-4 py-1.5 rounded-full font-black uppercase text-[9px] transition-all active:scale-95 ${user.status === 'Ativo' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}
                     >
-                      {user.status === 'Ativo' ? 'Desativar' : 'Ativar'}
+                      {user.status === 'Ativo' ? 'Banir' : 'Reativar'}
                     </button>
                   </div>
                 </div>
@@ -498,6 +498,31 @@ const UserDetailsPage = () => {
           </Card>
         </div>
       </div>
+
+      {/* MODAL DE CONFIRMAÇÃO DE BANIMENTO */}
+      <Dialog open={isBanModalOpen} onOpenChange={setIsBanModalOpen}>
+        <DialogContent className="max-w-md rounded-[2rem] p-8">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2 text-red-600">
+              <AlertTriangle size={24} /> {user.status === 'Ativo' ? 'Confirmar Banimento' : 'Confirmar Reativação'}
+            </DialogTitle>
+            <DialogDescription className="text-sm font-bold text-slate-500 uppercase mt-2">
+              {user.status === 'Ativo' 
+                ? `Deseja realmente banir ${user.name}? Ele perderá acesso imediato ao sistema.` 
+                : `Deseja reativar a conta de ${user.name}?`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-8 flex gap-3">
+            <Button variant="ghost" onClick={() => setIsBanModalOpen(false)} className="rounded-xl font-bold uppercase text-[10px] h-12 flex-1">Cancelar</Button>
+            <Button 
+              onClick={handleConfirmBan} 
+              className={`rounded-xl font-black uppercase tracking-widest text-[10px] h-12 flex-1 ${user.status === 'Ativo' ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white'}`}
+            >
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* MODAL DE ENDEREÇO (MANTIDO FUNCIONAL) */}
       <Dialog open={isAddressOpen} onOpenChange={setIsAddressOpen}>
