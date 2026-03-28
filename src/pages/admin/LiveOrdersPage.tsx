@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   ShoppingBag, Clock, CheckCircle2, XCircle, 
-  AlertCircle, Truck, Utensils, Navigation, Package
+  AlertCircle, Truck, Utensils, Navigation, Package,
+  ArrowRight, User
 } from "lucide-react";
 import CreateOrderModal from "@/components/admin/CreateOrderModal";
 
@@ -14,22 +16,23 @@ const LiveOrdersPage = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const stats = [
-    { label: "Pedidos concluídos", value: "0", color: "bg-emerald-50 text-emerald-600" },
-    { label: "Pedidos cancelados", value: "0", color: "bg-rose-50 text-rose-600" },
-    { label: "Em andamentos", value: "0", color: "bg-blue-50 text-blue-600" },
-    { label: "Total de vendas hoje", value: "0", color: "bg-cyan-50 text-cyan-600" },
+    { label: "Pedidos concluídos", value: "124", color: "bg-emerald-50 text-emerald-600", link: "/admin/orders/list" },
+    { label: "Pedidos cancelados", value: "12", color: "bg-rose-50 text-rose-600", link: "/admin/orders/list" },
+    { label: "Em andamentos", value: "08", color: "bg-blue-50 text-blue-600", link: "/admin/orders/manager" },
+    { label: "Total de vendas hoje", value: "R$ 2.450", color: "bg-cyan-50 text-cyan-600", link: "/admin/reports/store" },
   ];
 
   const columns = [
-    { title: "Novo Pedido", icon: <Package size={24} /> },
-    { title: "Preparando pedidos", icon: <Utensils size={24} /> },
-    { title: "Entregador Atribuido", icon: <User size={24} /> },
-    { title: "Entregador Pegou Pedido", icon: <Truck size={24} /> },
-    { title: "Concluído", icon: <CheckCircle2 size={24} /> },
-    { title: "Aguardando pagamento", icon: <Clock size={24} /> },
-    { title: "Pagamento Falhou", icon: <AlertCircle size={24} /> },
-    { title: "Pedido Cancelado", icon: <XCircle size={24} /> },
-    { title: "Pedido para Retirada", icon: <ShoppingBag size={24} /> },
+    { 
+      title: "Novo Pedido", 
+      icon: <Package size={20} />, 
+      orders: [
+        { id: "#1025", customer: "João Silva", total: "R$ 45,00", time: "Agora" }
+      ] 
+    },
+    { title: "Preparando", icon: <Utensils size={20} />, orders: [] },
+    { title: "Em Rota", icon: <Truck size={20} />, orders: [] },
+    { title: "Concluído", icon: <CheckCircle2 size={20} />, orders: [] },
   ];
 
   return (
@@ -44,35 +47,58 @@ const LiveOrdersPage = () => {
         </Button>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - Clicáveis */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         {stats.map((stat, i) => (
-          <Card key={i} className="border-none shadow-sm rounded-[2rem] overflow-hidden">
-            <CardContent className="p-6 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                <h3 className="text-2xl font-black text-slate-900">{stat.value}</h3>
-              </div>
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${stat.color}`}>
-                <div className="w-3 h-3 rounded-full bg-current opacity-20"></div>
-              </div>
-            </CardContent>
-          </Card>
+          <Link key={i} to={stat.link} className="block transition-transform hover:scale-[1.02] active:scale-95">
+            <Card className="border-none shadow-sm rounded-[2rem] overflow-hidden h-full">
+              <CardContent className="p-6 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
+                  <h3 className="text-2xl font-black text-slate-900">{stat.value}</h3>
+                </div>
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${stat.color}`}>
+                  <ArrowRight size={20} />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 
       {/* Live Columns Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {columns.map((col, i) => (
-          <div key={i} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-[300px]">
-            <div className="p-6 border-b border-slate-50">
-              <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{col.title}</h4>
+          <div key={i} className="bg-slate-50/50 rounded-[2.5rem] border border-slate-100 overflow-hidden flex flex-col min-h-[500px]">
+            <div className="p-6 border-b border-slate-100 bg-white flex items-center justify-between">
+              <h4 className="text-xs font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                {col.icon} {col.title}
+              </h4>
+              <Badge className="bg-slate-100 text-slate-400 border-none">{col.orders.length}</Badge>
             </div>
-            <div className="flex-1 flex flex-col items-center justify-center p-10 text-slate-300">
-              <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4">
-                <Package size={32} className="opacity-20" />
-              </div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-center">Sem pedidos para mostrar</p>
+            
+            <div className="p-4 space-y-4 flex-1">
+              {col.orders.length > 0 ? (
+                col.orders.map(order => (
+                  <Link key={order.id} to="/admin/orders/manager" className="block">
+                    <Card className="border-none shadow-sm rounded-2xl hover:ring-2 hover:ring-orange-500/20 transition-all">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="font-black text-slate-900 text-xs">{order.id}</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">{order.time}</span>
+                        </div>
+                        <p className="text-[10px] font-black text-slate-600 uppercase mb-1">{order.customer}</p>
+                        <p className="text-xs font-black text-orange-600">{order.total}</p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center py-20 text-slate-300 opacity-40">
+                  <Package size={32} className="mb-2" />
+                  <p className="text-[9px] font-black uppercase tracking-widest">Vazio</p>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -82,10 +108,5 @@ const LiveOrdersPage = () => {
     </AdminLayout>
   );
 };
-
-// Helper para ícone de usuário que faltou no import
-const User = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-);
 
 export default LiveOrdersPage;

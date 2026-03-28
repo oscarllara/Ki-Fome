@@ -48,7 +48,7 @@ const Index = () => {
               </Link>
             </div>
             <div className="space-y-4">
-              <Link to="/admin/orders/list" className="block">
+              <Link to="/admin/orders/manager" className="block">
                 <OrderRow 
                   name="Ki + Lanches" 
                   id="#WXKJPXR70" 
@@ -59,7 +59,7 @@ const Index = () => {
                   img="https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=100"
                 />
               </Link>
-              <Link to="/admin/orders/list" className="block">
+              <Link to="/admin/orders/manager" className="block">
                 <OrderRow 
                   name="Pizzaria Bella" 
                   id="#YY3DMWRZ1" 
@@ -70,7 +70,7 @@ const Index = () => {
                   img="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=100"
                 />
               </Link>
-              <Link to="/admin/orders/list" className="block">
+              <Link to="/admin/orders/manager" className="block">
                 <OrderRow 
                   name="Sushiman" 
                   id="#WARJAE3Y5" 
