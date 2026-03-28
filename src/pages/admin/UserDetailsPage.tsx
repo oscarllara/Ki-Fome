@@ -251,7 +251,7 @@ const UserDetailsPage = () => {
                     </div>
                     
                     <div className="space-y-4">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Permissões Ativas</Badge>
+                      <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Permissões Ativas</Label>
                       <div className="space-y-2">
                         <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
                           <CheckCircle2 className="text-green-500" size={18} />
