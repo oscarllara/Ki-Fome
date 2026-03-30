@@ -90,24 +90,26 @@ const DeliveryApp = () => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         // Simulação de Reverse Geocoding (Em produção usaria Google Maps API ou similar)
+        // Aqui definimos o nickname como a cidade detectada
         const newAddr = {
           id: Date.now(),
-          nickname: "Localização Atual",
-          street: "Sua Rua Detectada",
-          number: "S/N",
-          neighborhood: "Seu Bairro",
-          city: "Sua Cidade",
+          nickname: "Lavras, MG", // Simulação da cidade detectada
+          street: "Rua Central",
+          number: "123",
+          neighborhood: "Centro",
+          city: "Lavras",
+          state: "MG",
           isDefault: true
         };
         
         setSelectedAddress(newAddr);
-        const updated = [newAddr, ...addresses.filter(a => a.nickname !== "Localização Atual")];
+        const updated = [newAddr, ...addresses.filter(a => a.nickname !== "Lavras, MG")];
         setAddresses(updated);
         localStorage.setItem("kifome_user_addresses", JSON.stringify(updated));
         
         setIsLocating(false);
         setIsAddressModalOpen(false);
-        showSuccess("Localização detectada com sucesso!");
+        showSuccess("Localização detectada: Lavras, MG");
       },
       (error) => {
         showError("Não foi possível obter sua localização.");
@@ -118,8 +120,6 @@ const DeliveryApp = () => {
 
   const handleCategoryClick = (catId: string) => {
     showSuccess(`Filtrando por: ${catId}`);
-    // Aqui você navegaria para uma página de busca com o filtro
-    // navigate(`/delivery/search?category=${catId}`);
   };
 
   return (
@@ -136,7 +136,7 @@ const DeliveryApp = () => {
                   <span className="flex items-center gap-2">
                     <span className="text-orange-600">{selectedAddress.nickname}</span>
                     <span className="text-slate-300">•</span>
-                    <span className="truncate max-w-[150px]">{selectedAddress.street}</span>
+                    <span className="truncate max-w-[150px] text-slate-500 font-bold">{selectedAddress.street}</span>
                   </span>
                 ) : "Selecione um endereço"}
               </span>
