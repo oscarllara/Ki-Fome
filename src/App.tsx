@@ -11,6 +11,7 @@ import CheckoutPage from "./pages/CheckoutPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import OrderTrackingPage from "./pages/OrderTrackingPage";
 
 // Páginas Administrativas
 import StoresPage from "./pages/admin/StoresPage";
@@ -45,33 +46,19 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Redirecionamento Inicial */}
           <Route path="/" element={<Navigate to="/home" replace />} />
-          
-          {/* Landing Page & Login */}
           <Route path="/home" element={<PublicPortal />} />
           <Route path="/login" element={<Login />} />
-          
-          {/* App do Gestor (Master Admin) */}
           <Route path="/gestor" element={<Index />} />
-          
-          {/* App do Lojista (Painel do Restaurante) */}
           <Route path="/admin" element={<AdminDashboard />} />
-          
-          {/* App do Cliente (Delivery) */}
           <Route path="/delivery" element={<DeliveryApp />} />
           <Route path="/delivery/restaurant/:id" element={<RestaurantDetails />} />
           <Route path="/delivery/checkout" element={<CheckoutPage />} />
-          
-          {/* App do Parceiro (Afiliado) */}
+          <Route path="/delivery/track/:id" element={<OrderTrackingPage />} />
           <Route path="/partner" element={<PartnerApp />} />
-          
-          {/* Apps de Salão e Logística */}
           <Route path="/waiter" element={<WaiterApp />} />
           <Route path="/driver" element={<DriverApp />} />
           <Route path="/table/:tableId" element={<TableOrderApp />} />
-          
-          {/* Rotas Master Admin (Acessíveis via /gestor) */}
           <Route path="/admin/stores" element={<StoresPage />} />
           <Route path="/admin/menu/menu-categories" element={<MenuCategoriesPage />} />
           <Route path="/admin/menu/complements" element={<ComplementsPage />} />
@@ -97,7 +84,6 @@ const App = () => (
           <Route path="/admin/transactions/wallet" element={<WalletPage />} />
           <Route path="/admin/settings/zones" element={<GenericAdminPage title="Zonas (Franquias)" />} />
           <Route path="/admin/settings/all" element={<GenericAdminPage title="Todas as Configurações" />} />
-
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
