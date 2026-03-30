@@ -6,7 +6,8 @@ import {
   ArrowLeft, MapPin, Clock, CheckCircle2, 
   Truck, Utensils, Package, Star, Heart, 
   Smartphone, Navigation, Phone, MessageCircle,
-  ChevronRight, Wallet, Copy, Send
+  ChevronRight, Wallet, Copy, Send, AlertTriangle,
+  CreditCard, Banknote, RefreshCw, XCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,10 +23,10 @@ const OrderTrackingPage = () => {
   const [showRating, setShowRating] = useState(false);
   const [rating, setRating] = useState({ app: 0, store: 0, driver: 0 });
   const [tipAmount, setTipAmount] = useState("");
+  const [isChangingPayment, setIsChangingPayment] = useState(false);
 
   const loadOrder = () => {
     try {
-      // Tenta pegar o ID da URL ou do fragmento (#) caso o roteador falhe
       let orderId = id;
       if (!orderId && location.hash) {
         orderId = location.hash.replace('#', '');
@@ -36,7 +37,6 @@ const OrderTrackingPage = () => {
       const savedOrders = localStorage.getItem("kifome_orders");
       const allOrders = savedOrders ? JSON.parse(savedOrders) : [];
       
-      // Busca o pedido ignorando se ele tem # ou não no banco local
       const found = allOrders.find((o: any) => o.id.replace('#', '') === orderId.replace('#', ''));
       
       if (found) {
@@ -66,30 +66,26 @@ const OrderTrackingPage = () => {
     showSuccess("Chave PIX do Marcos copiada!");
   };
 
-  const handleConfirmTip = () => {
-    if (!tipAmount || parseFloat(tipAmount.replace(",", ".")) <= 0) {
-      showError("Informe um valor válido.");
-      return;
-    }
+  const handleChangePayment = (newMethod: string) => {
+    const savedOrders = localStorage.getItem("kifome_orders");
+    const allOrders = savedOrders ? JSON.parse(savedOrders) : [];
+    
+    const updatedOrders = allOrders.map((o: any) => {
+      if (o.id === order.id) {
+        return { 
+          ...o, 
+          paymentMethod: newMethod.toUpperCase(), 
+          paymentStatus: 'PENDING',
+          status: 'PENDING' // Reinicia para pendente para reprocessamento
+        };
+      }
+      return o;
+    });
 
-    const tipLog = {
-      id: Date.now(),
-      orderId: order?.id,
-      driverName: "Marcos Oliveira",
-      amount: parseFloat(tipAmount.replace(",", ".")),
-      date: new Date().toLocaleString("pt-BR"),
-      customer: "Felipe Denis"
-    };
-
-    try {
-      const savedTips = localStorage.getItem("kifome_tips_logs");
-      const existingTips = savedTips ? JSON.parse(savedTips) : [];
-      localStorage.setItem("kifome_tips_logs", JSON.stringify([tipLog, ...existingTips]));
-      showSuccess("Gorjeta registrada no sistema! Obrigado.");
-      setTipAmount("");
-    } catch (e) {
-      showError("Erro ao salvar gorjeta.");
-    }
+    localStorage.setItem("kifome_orders", JSON.stringify(updatedOrders));
+    setOrder({ ...order, paymentMethod: newMethod.toUpperCase(), paymentStatus: 'PENDING', status: 'PENDING' });
+    setIsChangingPayment(false);
+    showSuccess("Forma de pagamento atualizada! Pedido reenviado.");
   };
 
   if (!order) {
@@ -104,6 +100,8 @@ const OrderTrackingPage = () => {
     );
   }
 
+  const isPaymentFailed = order.paymentStatus === 'FAILED';
+
   return (
     <div className="min-h-screen bg-slate-50 pb-24 font-sans">
       <header className="bg-white px-6 py-6 flex items-center gap-4 sticky top-0 z-50 border-b border-slate-100">
@@ -117,50 +115,116 @@ const OrderTrackingPage = () => {
       </header>
 
       <main className="p-6 space-y-6 max-w-2xl mx-auto">
+        {/* Alerta de Erro no Pagamento */}
+        {isPaymentFailed && (
+          <section className="bg-red-50 border-2 border-red-100 p-6 rounded-[2.5rem] animate-in slide-in-from-top-4">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-red-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-200">
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-red-700 uppercase tracking-tight">Falha no Pagamento</h3>
+                <p className="text-[10px] font-bold text-red-500 uppercase">Não conseguimos processar seu {order.paymentMethod}</p>
+              </div>
+            </div>
+            <p className="text-xs text-red-600 font-medium mb-6">Ocorreu um erro na transação. Você pode tentar novamente ou escolher outra forma de pagamento para liberar seu pedido.</p>
+            
+            {!isChangingPayment ? (
+              <Button onClick={() => setIsChangingPayment(true)} className="w-full h-12 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black uppercase text-[10px] tracking-widest">
+                Trocar Forma de Pagamento
+              </Button>
+            ) : (
+              <div className="grid grid-cols-1 gap-2">
+                <Button onClick={() => handleChangePayment('pix')} variant="outline" className="h-12 rounded-xl border-red-200 text-red-700 font-bold uppercase text-[10px] justify-start gap-3">
+                  <Wallet size={16} /> PIX (Tentar Novamente)
+                </Button>
+                <Button onClick={() => handleChangePayment('machine')} variant="outline" className="h-12 rounded-xl border-red-200 text-red-700 font-bold uppercase text-[10px] justify-start gap-3">
+                  <CreditCard size={16} /> Cartão na Entrega
+                </Button>
+                <Button onClick={() => handleChangePayment('money')} variant="outline" className="h-12 rounded-xl border-red-200 text-red-700 font-bold uppercase text-[10px] justify-start gap-3">
+                  <Banknote size={16} /> Dinheiro
+                </Button>
+                <Button onClick={() => setIsChangingPayment(false)} variant="ghost" className="text-[9px] font-black text-slate-400 uppercase">Cancelar</Button>
+              </div>
+            )}
+          </section>
+        )}
+
         <div className="w-full h-48 bg-slate-200 rounded-[3rem] relative overflow-hidden shadow-inner border-4 border-white">
           <img src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=800" className="w-full h-full object-cover opacity-40 grayscale" alt="Map" />
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="relative">
-              <div className="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center text-white shadow-2xl animate-bounce">
-                <Truck size={24} />
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white shadow-2xl animate-bounce ${isPaymentFailed ? 'bg-red-500' : 'bg-orange-600'}`}>
+                {isPaymentFailed ? <XCircle size={24} /> : <Truck size={24} />}
               </div>
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-orange-600 rotate-45"></div>
+              <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 ${isPaymentFailed ? 'bg-red-500' : 'bg-orange-600'}`}></div>
             </div>
           </div>
         </div>
 
+        {/* Status do Pedido */}
         <section className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm space-y-8">
           <div className="flex justify-between items-center">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Status do Pedido</h3>
-            <Badge className="bg-orange-100 text-orange-600 border-none font-black uppercase text-[9px]">
-              {order.status === 'PENDING' && 'Enviado'}
-              {order.status === 'PREPARING' && 'Na Cozinha'}
-              {order.status === 'READY' && 'Pronto para Coleta'}
-              {order.status === 'SHIPPING' && 'Em Rota'}
-              {order.status === 'DELIVERED' && 'Entregue'}
+            <Badge className={`border-none font-black uppercase text-[9px] px-4 py-1 rounded-lg ${isPaymentFailed ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>
+              {isPaymentFailed ? 'Pagamento Pendente' : (
+                <>
+                  {order.status === 'PENDING' && 'Enviado'}
+                  {order.status === 'PREPARING' && 'Na Cozinha'}
+                  {order.status === 'READY' && 'Pronto para Coleta'}
+                  {order.status === 'SHIPPING' && 'Em Rota'}
+                  {order.status === 'DELIVERED' && 'Entregue'}
+                </>
+              )}
             </Badge>
           </div>
 
           <div className="relative pt-4">
-            <Progress value={(getStatusStep() / 5) * 100} className="h-2 bg-slate-100" />
+            <Progress value={isPaymentFailed ? 10 : (getStatusStep() / 5) * 100} className={`h-2 ${isPaymentFailed ? 'bg-red-100' : 'bg-slate-100'}`} />
             <div className="flex justify-between mt-4">
-              <div className={`flex flex-col items-center gap-2 ${getStatusStep() >= 1 ? 'text-orange-600' : 'text-slate-300'}`}>
+              <div className={`flex flex-col items-center gap-2 ${getStatusStep() >= 1 && !isPaymentFailed ? 'text-orange-600' : 'text-slate-300'}`}>
                 <Package size={20} />
                 <span className="text-[8px] font-black uppercase">Enviado</span>
               </div>
-              <div className={`flex flex-col items-center gap-2 ${getStatusStep() >= 2 ? 'text-orange-600' : 'text-slate-300'}`}>
+              <div className={`flex flex-col items-center gap-2 ${getStatusStep() >= 2 && !isPaymentFailed ? 'text-orange-600' : 'text-slate-300'}`}>
                 <Utensils size={20} />
                 <span className="text-[8px] font-black uppercase">Preparo</span>
               </div>
-              <div className={`flex flex-col items-center gap-2 ${getStatusStep() >= 4 ? 'text-orange-600' : 'text-slate-300'}`}>
+              <div className={`flex flex-col items-center gap-2 ${getStatusStep() >= 4 && !isPaymentFailed ? 'text-orange-600' : 'text-slate-300'}`}>
                 <Truck size={20} />
                 <span className="text-[8px] font-black uppercase">Rota</span>
               </div>
-              <div className={`flex flex-col items-center gap-2 ${getStatusStep() >= 5 ? 'text-orange-600' : 'text-slate-300'}`}>
+              <div className={`flex flex-col items-center gap-2 ${getStatusStep() >= 5 && !isPaymentFailed ? 'text-orange-600' : 'text-slate-300'}`}>
                 <CheckCircle2 size={20} />
                 <span className="text-[8px] font-black uppercase">Fim</span>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Resumo do Pedido e Pagamento */}
+        <section className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-50 pb-4">
+            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Resumo do Pedido</h3>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black text-slate-400 uppercase">Pagamento:</span>
+              <Badge variant="outline" className={`text-[9px] font-black uppercase border-slate-200 ${isPaymentFailed ? 'text-red-600 bg-red-50' : 'text-emerald-600 bg-emerald-50'}`}>
+                {order.paymentMethod} • {isPaymentFailed ? 'FALHOU' : 'APROVADO'}
+              </Badge>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            {order.items.map((item: string, i: number) => (
+              <div key={i} className="flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-600 uppercase">{item}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="pt-4 border-t border-slate-50 flex justify-between items-center">
+            <span className="text-xs font-black text-slate-400 uppercase">Total Pago</span>
+            <span className="text-xl font-black text-slate-900">{order.total}</span>
           </div>
         </section>
 
