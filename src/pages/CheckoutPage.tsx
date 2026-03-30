@@ -18,7 +18,6 @@ const CheckoutPage = () => {
   const [address, setAddress] = useState<any>(null);
   const [cart, setCart] = useState<any[]>([]);
 
-  // Credencial de Produção fornecida pelo usuário
   const MP_PUBLIC_KEY = "APP_USR-d0b5b319-7a4b-4ed5-9639-08f993aab379"; 
 
   useEffect(() => {
@@ -61,8 +60,11 @@ const CheckoutPage = () => {
 
     setLoading(true);
     
+    // Gerando ID sem o caractere # para não quebrar a URL
+    const orderId = Math.random().toString(36).substr(2, 9).toUpperCase();
+
     const newOrder = {
-      id: `#${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+      id: orderId,
       customer: "Felipe Denis",
       phone: "(88) 99926-6723",
       address: `${address.street}, ${address.number} - ${address.neighborhood}`,
@@ -81,7 +83,7 @@ const CheckoutPage = () => {
       setLoading(false);
       localStorage.removeItem("kifome_cart");
       showSuccess("Pedido enviado com sucesso!");
-      navigate("/delivery");
+      navigate(`/delivery/track/${orderId}`); // Redireciona direto para o acompanhamento
     }, 2000);
   };
 
@@ -93,7 +95,6 @@ const CheckoutPage = () => {
       </header>
 
       <main className="p-6 space-y-6 max-w-2xl mx-auto">
-        {/* Itens do Carrinho */}
         <section className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Seu Pedido</h3>
           <div className="divide-y divide-slate-50">
@@ -113,7 +114,6 @@ const CheckoutPage = () => {
           </div>
         </section>
 
-        {/* Endereço */}
         <section className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Endereço de Entrega</h3>
           <div className="flex items-start gap-4">
@@ -125,7 +125,6 @@ const CheckoutPage = () => {
           </div>
         </section>
 
-        {/* Pagamento */}
         <section className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Forma de Pagamento</h3>
           <div className="grid grid-cols-1 gap-3">
@@ -152,12 +151,10 @@ const CheckoutPage = () => {
           </div>
         </section>
 
-        {/* Se for Online, mostra o Brick do Mercado Pago */}
         {paymentMethod === 'online' && (
           <MercadoPagoPayment publicKey={MP_PUBLIC_KEY} amount={total} orderId="TEMP_ID" />
         )}
 
-        {/* Resumo */}
         <section className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
           <div className="flex justify-between text-sm font-bold text-slate-500"><span>Subtotal</span><span>R$ {subtotal.toFixed(2)}</span></div>
           <div className="flex justify-between text-sm font-bold text-emerald-600"><span>Taxa de Entrega</span><span>R$ {deliveryFee.toFixed(2)}</span></div>

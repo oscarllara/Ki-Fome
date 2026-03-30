@@ -99,7 +99,7 @@ const OrderTrackingPage = () => {
         </Button>
         <div>
           <h1 className="text-lg font-black uppercase tracking-tight">Acompanhar Pedido</h1>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{order.id}</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">#{order.id}</p>
         </div>
       </header>
 
