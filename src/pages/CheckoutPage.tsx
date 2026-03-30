@@ -18,8 +18,8 @@ const CheckoutPage = () => {
   const [address, setAddress] = useState<any>(null);
   const [cart, setCart] = useState<any[]>([]);
 
-  // COLOQUE SUA PUBLIC KEY AQUI PARA TESTAR
-  const MP_PUBLIC_KEY = "TEST-e6888888-8888-8888-8888-888888888888"; 
+  // Credencial de Produção fornecida pelo usuário
+  const MP_PUBLIC_KEY = "APP_USR-d0b5b319-7a4b-4ed5-9639-08f993aab379"; 
 
   useEffect(() => {
     const savedAddr = localStorage.getItem("kifome_user_addresses");
