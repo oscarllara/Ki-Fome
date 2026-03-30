@@ -6,12 +6,13 @@ import {
   ArrowLeft, MapPin, Clock, CheckCircle2, 
   Truck, Utensils, Package, Star, Heart, 
   Smartphone, Navigation, Phone, MessageCircle,
-  ChevronRight, Wallet, Copy
+  ChevronRight, Wallet, Copy, Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { showSuccess } from "@/utils/toast";
+import { Input } from "@/components/ui/input";
+import { showSuccess, showError } from "@/utils/toast";
 
 const OrderTrackingPage = () => {
   const { id } = useParams();
@@ -19,6 +20,7 @@ const OrderTrackingPage = () => {
   const [order, setOrder] = useState<any>(null);
   const [showRating, setShowRating] = useState(false);
   const [rating, setRating] = useState({ app: 0, store: 0, driver: 0 });
+  const [tipAmount, setTipAmount] = useState("");
 
   const loadOrder = () => {
     const allOrders = JSON.parse(localStorage.getItem("kifome_orders") || "[]");
@@ -43,8 +45,31 @@ const OrderTrackingPage = () => {
   };
 
   const handleCopyPix = () => {
-    navigator.clipboard.writeText("entregador@pix.com");
-    showSuccess("Chave PIX copiada!");
+    navigator.clipboard.writeText("marcos@pix.com");
+    showSuccess("Chave PIX do Marcos copiada!");
+  };
+
+  const handleConfirmTip = () => {
+    if (!tipAmount || parseFloat(tipAmount.replace(",", ".")) <= 0) {
+      showError("Informe um valor válido.");
+      return;
+    }
+
+    // Registra a gorjeta no sistema para o gestor ver
+    const tipLog = {
+      id: Date.now(),
+      orderId: order.id,
+      driverName: "Marcos Oliveira",
+      amount: parseFloat(tipAmount.replace(",", ".")),
+      date: new Date().toLocaleString("pt-BR"),
+      customer: "Felipe Denis"
+    };
+
+    const existingTips = JSON.parse(localStorage.getItem("kifome_tips_logs") || "[]");
+    localStorage.setItem("kifome_tips_logs", JSON.stringify([tipLog, ...existingTips]));
+
+    showSuccess("Gorjeta registrada no sistema! Obrigado.");
+    setTipAmount("");
   };
 
   if (!order) return null;
@@ -118,30 +143,7 @@ const OrderTrackingPage = () => {
           </section>
         )}
 
-        {/* Entregador */}
-        {order.status === 'SHIPPING' && (
-          <section className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400">
-                <User size={28} />
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Seu Entregador</p>
-                <p className="font-black text-slate-900 uppercase text-sm">Marcos Oliveira</p>
-                <div className="flex items-center gap-1 text-orange-500 mt-1">
-                  <Star size={12} className="fill-orange-500" />
-                  <span className="text-[10px] font-black">4.9</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="icon" className="rounded-xl bg-slate-50 text-slate-600"><Phone size={20} /></Button>
-              <Button variant="ghost" size="icon" className="rounded-xl bg-slate-50 text-slate-600"><MessageCircle size={20} /></Button>
-            </div>
-          </section>
-        )}
-
-        {/* Modal de Avaliação */}
+        {/* Modal de Avaliação e Gorjeta */}
         {showRating && (
           <section className="bg-white p-10 rounded-[3rem] border-2 border-orange-100 shadow-2xl space-y-8 animate-in zoom-in-95">
             <div className="text-center">
@@ -173,20 +175,36 @@ const OrderTrackingPage = () => {
               </div>
             </div>
 
-            {/* Gorjeta PIX */}
-            <div className="bg-orange-50 p-6 rounded-[2.5rem] border border-orange-100 space-y-4">
+            {/* Gorjeta PIX Direta com Registro no Sistema */}
+            <div className="bg-orange-50 p-8 rounded-[2.5rem] border border-orange-100 space-y-6">
               <div className="flex items-center gap-3">
                 <Wallet className="text-orange-600" size={20} />
-                <h4 className="text-[10px] font-black text-orange-900 uppercase tracking-widest">Doar Gorjeta (PIX)</h4>
+                <h4 className="text-[10px] font-black text-orange-900 uppercase tracking-widest">Doar Gorjeta (PIX Direto)</h4>
               </div>
-              <p className="text-[10px] text-orange-700 font-medium">O valor vai 100% para o entregador Marcos Oliveira.</p>
-              <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-orange-200">
-                <span className="text-xs font-black text-slate-900 flex-1 truncate">entregador@pix.com</span>
-                <Button onClick={handleCopyPix} size="sm" className="bg-orange-600 text-white rounded-lg h-8 px-3 text-[9px] font-black uppercase">Copiar</Button>
+              
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 bg-white p-4 rounded-2xl border border-orange-200">
+                  <span className="text-xs font-black text-slate-900 flex-1 truncate">marcos@pix.com</span>
+                  <Button onClick={handleCopyPix} size="sm" className="bg-orange-600 text-white rounded-xl h-10 px-4 text-[9px] font-black uppercase">Copiar Chave</Button>
+                </div>
+                
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black text-orange-700 uppercase ml-1">Quanto você enviou?</p>
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="R$ 0,00" 
+                      value={tipAmount}
+                      onChange={(e) => setTipAmount(e.target.value)}
+                      className="rounded-xl h-12 bg-white border-orange-100 font-black"
+                    />
+                    <Button onClick={handleConfirmTip} className="bg-slate-900 text-white rounded-xl h-12 px-4"><Send size={18} /></Button>
+                  </div>
+                  <p className="text-[8px] text-slate-400 font-bold uppercase italic">*Isso ajuda o gestor a premiar os melhores entregadores.</p>
+                </div>
               </div>
             </div>
 
-            <Button onClick={() => { showSuccess("Obrigado pela avaliação!"); navigate("/delivery"); }} className="w-full h-16 bg-slate-900 text-white rounded-[2rem] font-black uppercase tracking-widest text-[11px]">Enviar Avaliação</Button>
+            <Button onClick={() => { showSuccess("Obrigado pela avaliação!"); navigate("/delivery"); }} className="w-full h-16 bg-slate-900 text-white rounded-[2rem] font-black uppercase tracking-widest text-[11px]">Finalizar e Voltar</Button>
           </section>
         )}
       </main>
