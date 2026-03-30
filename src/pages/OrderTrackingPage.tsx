@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { 
   ArrowLeft, MapPin, Clock, CheckCircle2, 
-  Truck, Utensils, Package, Star, Heart, 
+  Bike, Utensils, Package, Star, Heart, 
   Smartphone, Navigation, Phone, MessageCircle,
   ChevronRight, Wallet, Copy, Send, AlertTriangle,
   CreditCard, Banknote, RefreshCw, XCircle
@@ -66,6 +66,32 @@ const OrderTrackingPage = () => {
     showSuccess("Chave PIX do Marcos copiada!");
   };
 
+  const handleConfirmTip = () => {
+    if (!tipAmount || parseFloat(tipAmount.replace(",", ".")) <= 0) {
+      showError("Informe um valor válido.");
+      return;
+    }
+
+    const tipLog = {
+      id: Date.now(),
+      orderId: order?.id,
+      driverName: "Marcos Oliveira",
+      amount: parseFloat(tipAmount.replace(",", ".")),
+      date: new Date().toLocaleString("pt-BR"),
+      customer: "Felipe Denis"
+    };
+
+    try {
+      const savedTips = localStorage.getItem("kifome_tips_logs");
+      const existingTips = savedTips ? JSON.parse(savedTips) : [];
+      localStorage.setItem("kifome_tips_logs", JSON.stringify([tipLog, ...existingTips]));
+      showSuccess("Gorjeta registrada no sistema! Obrigado.");
+      setTipAmount("");
+    } catch (e) {
+      showError("Erro ao salvar gorjeta.");
+    }
+  };
+
   const handleChangePayment = (newMethod: string) => {
     const savedOrders = localStorage.getItem("kifome_orders");
     const allOrders = savedOrders ? JSON.parse(savedOrders) : [];
@@ -76,7 +102,7 @@ const OrderTrackingPage = () => {
           ...o, 
           paymentMethod: newMethod.toUpperCase(), 
           paymentStatus: 'PENDING',
-          status: 'PENDING' // Reinicia para pendente para reprocessamento
+          status: 'PENDING' 
         };
       }
       return o;
@@ -115,7 +141,6 @@ const OrderTrackingPage = () => {
       </header>
 
       <main className="p-6 space-y-6 max-w-2xl mx-auto">
-        {/* Alerta de Erro no Pagamento */}
         {isPaymentFailed && (
           <section className="bg-red-50 border-2 border-red-100 p-6 rounded-[2.5rem] animate-in slide-in-from-top-4">
             <div className="flex items-center gap-4 mb-4">
@@ -155,14 +180,13 @@ const OrderTrackingPage = () => {
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="relative">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white shadow-2xl animate-bounce ${isPaymentFailed ? 'bg-red-500' : 'bg-orange-600'}`}>
-                {isPaymentFailed ? <XCircle size={24} /> : <Truck size={24} />}
+                {isPaymentFailed ? <XCircle size={24} /> : <Bike size={24} />}
               </div>
               <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 ${isPaymentFailed ? 'bg-red-500' : 'bg-orange-600'}`}></div>
             </div>
           </div>
         </div>
 
-        {/* Status do Pedido */}
         <section className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm space-y-8">
           <div className="flex justify-between items-center">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Status do Pedido</h3>
@@ -191,7 +215,7 @@ const OrderTrackingPage = () => {
                 <span className="text-[8px] font-black uppercase">Preparo</span>
               </div>
               <div className={`flex flex-col items-center gap-2 ${getStatusStep() >= 4 && !isPaymentFailed ? 'text-orange-600' : 'text-slate-300'}`}>
-                <Truck size={20} />
+                <Bike size={20} />
                 <span className="text-[8px] font-black uppercase">Rota</span>
               </div>
               <div className={`flex flex-col items-center gap-2 ${getStatusStep() >= 5 && !isPaymentFailed ? 'text-orange-600' : 'text-slate-300'}`}>
@@ -202,7 +226,6 @@ const OrderTrackingPage = () => {
           </div>
         </section>
 
-        {/* Resumo do Pedido e Pagamento */}
         <section className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm space-y-6">
           <div className="flex items-center justify-between border-b border-slate-50 pb-4">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Resumo do Pedido</h3>
