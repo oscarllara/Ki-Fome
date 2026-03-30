@@ -62,11 +62,9 @@ const DeliveryApp = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Verificar Login Persistente
     const session = localStorage.getItem("kifome_user_session");
     if (session) setIsLoggedIn(true);
 
-    // Carregar Endereços
     const savedAddr = localStorage.getItem("kifome_user_addresses");
     if (savedAddr) {
       const parsed = JSON.parse(savedAddr);
@@ -74,7 +72,6 @@ const DeliveryApp = () => {
       const defaultAddr = parsed.find((a: any) => a.isDefault) || parsed[0];
       setSelectedAddress(defaultAddr);
     } else {
-      // Se não tiver endereço, abre o modal após um pequeno delay
       setTimeout(() => setIsAddressModalOpen(true), 500);
     }
   }, []);
@@ -82,39 +79,60 @@ const DeliveryApp = () => {
   const handleGetCurrentLocation = () => {
     setIsLocating(true);
     if (!navigator.geolocation) {
-      showError("Geolocalização não suportada pelo seu navegador.");
+      showError("Geolocalização não suportada.");
       setIsLocating(false);
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        // Simulação de Reverse Geocoding (Em produção usaria Google Maps API ou similar)
-        // Aqui definimos o nickname como a cidade detectada
-        const newAddr = {
-          id: Date.now(),
-          nickname: "Lavras, MG", // Simulação da cidade detectada
-          street: "Rua Central",
-          number: "123",
-          neighborhood: "Centro",
-          city: "Lavras",
-          state: "MG",
-          isDefault: true
-        };
+      async (position) => {
+        const { latitude, longitude } = position.coords;
         
-        setSelectedAddress(newAddr);
-        const updated = [newAddr, ...addresses.filter(a => a.nickname !== "Lavras, MG")];
-        setAddresses(updated);
-        localStorage.setItem("kifome_user_addresses", JSON.stringify(updated));
-        
-        setIsLocating(false);
-        setIsAddressModalOpen(false);
-        showSuccess("Localização detectada: Lavras, MG");
+        try {
+          // Usando a API gratuita do OpenStreetMap (Nominatim) para Geocodificação Reversa
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+          );
+          const data = await response.json();
+          
+          if (data && data.address) {
+            const city = data.address.city || data.address.town || data.address.village || data.address.suburb || "Cidade Desconhecida";
+            const state = data.address.state || "";
+            const street = data.address.road || "Rua não identificada";
+            const neighborhood = data.address.suburb || data.address.neighbourhood || "";
+
+            const newAddr = {
+              id: Date.now(),
+              nickname: `${city}, ${state}`,
+              street: street,
+              number: data.address.house_number || "S/N",
+              neighborhood: neighborhood,
+              city: city,
+              state: state,
+              isDefault: true
+            };
+            
+            setSelectedAddress(newAddr);
+            const updated = [newAddr, ...addresses.filter(a => a.nickname !== newAddr.nickname)];
+            setAddresses(updated);
+            localStorage.setItem("kifome_user_addresses", JSON.stringify(updated));
+            
+            showSuccess(`Localização detectada: ${city}`);
+          } else {
+            showError("Não foi possível converter as coordenadas em endereço.");
+          }
+        } catch (error) {
+          showError("Erro ao buscar endereço. Tente novamente.");
+        } finally {
+          setIsLocating(false);
+          setIsAddressModalOpen(false);
+        }
       },
       (error) => {
-        showError("Não foi possível obter sua localização.");
+        showError("Permissão de localização negada ou erro no GPS.");
         setIsLocating(false);
-      }
+      },
+      { enableHighAccuracy: true }
     );
   };
 
