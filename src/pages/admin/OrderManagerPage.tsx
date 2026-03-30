@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Clock, CheckCircle2, XCircle, Utensils, 
   Truck, MapPin, Phone, Navigation,
-  AlertCircle, Check, ShieldCheck, Package
+  AlertCircle, Check, ShieldCheck, Package, RefreshCw
 } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import {
@@ -33,45 +33,38 @@ interface Order {
   status: OrderStatus;
   time: string;
   pin?: string;
+  createdAt?: string;
 }
 
-const INITIAL_ORDERS: Order[] = [
-  { 
-    id: "#1024", 
-    customer: "Felipe Denis", 
-    phone: "(88) 99926-6723", 
-    address: "Rua Central, 123 - Centro", 
-    items: ["2x X-Turbo Burguer", "1x Coca-Cola 2L"], 
-    total: "R$ 58,90", 
-    status: 'PENDING', 
-    time: "2 min" 
-  },
-  { 
-    id: "#1023", 
-    customer: "Maria Souza", 
-    phone: "(88) 98877-6655", 
-    address: "Av. Brasil, 450 - Bairro Novo", 
-    items: ["1x Pizza Calabresa G"], 
-    total: "R$ 45,00", 
-    status: 'PREPARING', 
-    time: "15 min" 
-  }
-];
-
 const OrderManagerPage = () => {
-  const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [pinInput, setPinInput] = useState("");
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
 
+  const loadOrders = () => {
+    const savedOrders = JSON.parse(localStorage.getItem("kifome_orders") || "[]");
+    setOrders(savedOrders);
+  };
+
+  useEffect(() => {
+    loadOrders();
+    // Polling para simular tempo real (a cada 5 segundos)
+    const interval = setInterval(loadOrders, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   const updateStatus = (orderId: string, newStatus: OrderStatus) => {
-    setOrders(prev => prev.map(order => {
+    const updatedOrders = orders.map(order => {
       if (order.id === orderId) {
         const pin = newStatus === 'SHIPPING' ? Math.floor(1000 + Math.random() * 9000).toString() : order.pin;
         return { ...order, status: newStatus, pin };
       }
       return order;
-    }));
+    });
+    
+    setOrders(updatedOrders);
+    localStorage.setItem("kifome_orders", JSON.stringify(updatedOrders));
     
     const statusLabels: Record<string, string> = {
       'PREPARING': 'Pedido aceito!',
@@ -178,8 +171,11 @@ const OrderManagerPage = () => {
 
   return (
     <AdminLayout>
-      <header className="mb-10">
+      <header className="mb-10 flex justify-between items-center">
         <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Gestor de Pedidos</h1>
+        <Button onClick={loadOrders} variant="outline" className="rounded-xl gap-2">
+          <RefreshCw size={18} /> Atualizar
+        </Button>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Truck, MapPin, Navigation, CheckCircle2, 
-  Clock, DollarSign, User, ChevronRight, Phone
+  Clock, DollarSign, User, ChevronRight, Phone, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,19 +11,26 @@ import { showSuccess } from "@/utils/toast";
 
 const DriverApp = () => {
   const [status, setStatus] = useState<"offline" | "online" | "busy">("online");
-  
-  const activeDeliveries = [
-    { 
-      id: "#1024", 
-      store: "Ki + Lanches", 
-      address: "Rua das Flores, 450 - Centro", 
-      fee: "R$ 8,00",
-      distance: "2.4 km",
-      status: "Coletando"
-    }
-  ];
+  const [deliveries, setDeliveries] = useState<any[]>([]);
 
-  const handleFinish = () => {
+  const loadDeliveries = () => {
+    const allOrders = JSON.parse(localStorage.getItem("kifome_orders") || "[]");
+    // Entregador vê pedidos que estão READY (Prontos) ou SHIPPING (Em rota com ele)
+    const active = allOrders.filter((o: any) => o.status === 'READY' || o.status === 'SHIPPING');
+    setDeliveries(active);
+  };
+
+  useEffect(() => {
+    loadDeliveries();
+    const interval = setInterval(loadDeliveries, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleFinish = (orderId: string) => {
+    const allOrders = JSON.parse(localStorage.getItem("kifome_orders") || "[]");
+    const updated = allOrders.map((o: any) => o.id === orderId ? { ...o, status: 'DELIVERED' } : o);
+    localStorage.setItem("kifome_orders", JSON.stringify(updated));
+    loadDeliveries();
     showSuccess("Entrega finalizada! Saldo atualizado.");
   };
 
@@ -64,10 +71,13 @@ const DriverApp = () => {
       </header>
 
       <main className="px-6 space-y-6">
-        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Entregas Ativas</h3>
+        <div className="flex justify-between items-center">
+          <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Entregas Ativas</h3>
+          <Button onClick={loadDeliveries} variant="ghost" size="icon" className="text-slate-400"><RefreshCw size={18} /></Button>
+        </div>
         
-        {activeDeliveries.length > 0 ? (
-          activeDeliveries.map(delivery => (
+        {deliveries.length > 0 ? (
+          deliveries.map(delivery => (
             <div key={delivery.id} className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm space-y-6">
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
@@ -76,10 +86,12 @@ const DriverApp = () => {
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pedido {delivery.id}</p>
-                    <p className="font-black text-slate-900 uppercase">{delivery.store}</p>
+                    <p className="font-black text-slate-900 uppercase">Restaurante Central</p>
                   </div>
                 </div>
-                <Badge className="bg-blue-100 text-blue-600 border-none font-black uppercase text-[9px]">{delivery.status}</Badge>
+                <Badge className={`border-none font-black uppercase text-[9px] ${delivery.status === 'READY' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
+                  {delivery.status === 'READY' ? 'Aguardando Coleta' : 'Em Rota'}
+                </Badge>
               </div>
 
               <div className="space-y-4">
@@ -95,11 +107,11 @@ const DriverApp = () => {
                 <div className="flex gap-4">
                   <div className="flex-1 bg-slate-50 p-4 rounded-2xl">
                     <p className="text-[9px] font-black text-slate-400 uppercase">Taxa</p>
-                    <p className="text-sm font-black text-emerald-600">{delivery.fee}</p>
+                    <p className="text-sm font-black text-emerald-600">R$ 5,00</p>
                   </div>
                   <div className="flex-1 bg-slate-50 p-4 rounded-2xl">
-                    <p className="text-[9px] font-black text-slate-400 uppercase">Distância</p>
-                    <p className="text-sm font-black text-slate-700">{delivery.distance}</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase">Total Pedido</p>
+                    <p className="text-sm font-black text-slate-700">{delivery.total}</p>
                   </div>
                 </div>
               </div>
@@ -108,7 +120,10 @@ const DriverApp = () => {
                 <Button variant="outline" className="flex-1 h-14 rounded-2xl border-slate-200 font-black uppercase text-[10px] gap-2">
                   <Navigation size={16} /> GPS
                 </Button>
-                <Button onClick={handleFinish} className="flex-1 h-14 bg-slate-900 hover:bg-black text-white rounded-2xl font-black uppercase text-[10px] gap-2">
+                <Button 
+                  onClick={() => handleFinish(delivery.id)} 
+                  className="flex-1 h-14 bg-slate-900 hover:bg-black text-white rounded-2xl font-black uppercase text-[10px] gap-2"
+                >
                   <CheckCircle2 size={16} /> Finalizar
                 </Button>
               </div>
@@ -120,26 +135,6 @@ const DriverApp = () => {
             <p className="text-sm font-black text-slate-400 uppercase">Aguardando novas chamadas...</p>
           </div>
         )}
-
-        <section className="pt-6">
-          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 ml-2">Histórico Recente</h3>
-          <div className="space-y-3">
-            {[1, 2].map(i => (
-              <div key={i} className="bg-white p-5 rounded-3xl border border-slate-100 flex items-center justify-between opacity-60">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300">
-                    <CheckCircle2 size={20} />
-                  </div>
-                  <div>
-                    <p className="font-black text-slate-900 uppercase text-xs">Pedido #102{i}</p>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase">Finalizado às 18:30</p>
-                  </div>
-                </div>
-                <span className="font-black text-emerald-600 text-sm">+ R$ 7,50</span>
-              </div>
-            ))}
-          </div>
-        </section>
       </main>
 
       {/* Bottom Nav */}

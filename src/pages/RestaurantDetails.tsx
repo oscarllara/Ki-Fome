@@ -33,6 +33,12 @@ const RestaurantDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [cartCount, setCartCount] = useState(0);
+
+  const handleAddToCart = (item: any) => {
+    setCartCount(prev => prev + 1);
+    showSuccess(`${item.name} adicionado ao carrinho!`);
+  };
 
   return (
     <div className="min-h-screen bg-white pb-32 font-sans">
@@ -118,6 +124,7 @@ const RestaurantDetails = () => {
               {cat.items.map((item) => (
                 <div 
                   key={item.id}
+                  onClick={() => handleAddToCart(item)}
                   className="bg-white p-4 rounded-[2.5rem] border border-slate-100 shadow-sm flex gap-4 hover:shadow-md transition-all cursor-pointer group active:scale-95"
                 >
                   <div className="flex-1">
@@ -136,17 +143,22 @@ const RestaurantDetails = () => {
       </div>
 
       {/* Carrinho Flutuante */}
-      <div className="fixed bottom-8 left-6 right-6 z-50">
-        <Button className="w-full h-16 bg-orange-600 hover:bg-orange-700 text-white rounded-[2rem] shadow-2xl flex justify-between px-8 items-center group active:scale-95 transition-all">
-          <div className="flex items-center gap-3">
-            <div className="bg-white/20 w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs">
-              2
+      {cartCount > 0 && (
+        <div className="fixed bottom-8 left-6 right-6 z-50 animate-in slide-in-from-bottom-10">
+          <Button 
+            onClick={() => navigate("/delivery/checkout")}
+            className="w-full h-16 bg-orange-600 hover:bg-orange-700 text-white rounded-[2rem] shadow-2xl flex justify-between px-8 items-center group active:scale-95 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs">
+                {cartCount}
+              </div>
+              <span className="font-black uppercase text-[11px] tracking-widest">Ver Carrinho</span>
             </div>
-            <span className="font-black uppercase text-[11px] tracking-widest">Ver Carrinho</span>
-          </div>
-          <span className="font-black">R$ 57,80</span>
-        </Button>
-      </div>
+            <span className="font-black">R$ {(cartCount * 28.90).toFixed(2)}</span>
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
