@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import PublicPortal from "./pages/PublicPortal";
 import DeliveryApp from "./pages/DeliveryApp";
@@ -32,6 +32,7 @@ import WalletPage from "./pages/admin/WalletPage";
 import WaiterApp from "./pages/WaiterApp";
 import TableOrderApp from "./pages/TableOrderApp";
 import DriverApp from "./pages/DriverApp";
+import PartnerApp from "./pages/PartnerApp";
 
 const queryClient = new QueryClient();
 
@@ -42,26 +43,35 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          {/* Redirecionamento Inicial */}
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          
+          {/* Landing Page & Login */}
+          <Route path="/home" element={<PublicPortal />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/public" element={<PublicPortal />} />
-          <Route path="/delivery" element={<DeliveryApp />} />
+          
+          {/* App do Gestor (Master Admin) */}
+          <Route path="/gestor" element={<Index />} />
+          
+          {/* App do Lojista (Painel do Restaurante) */}
           <Route path="/admin" element={<AdminDashboard />} />
+          
+          {/* App do Cliente (Delivery) */}
+          <Route path="/delivery" element={<DeliveryApp />} />
+          
+          {/* App do Parceiro (Afiliado) */}
+          <Route path="/partner" element={<PartnerApp />} />
           
           {/* Apps de Salão e Logística */}
           <Route path="/waiter" element={<WaiterApp />} />
           <Route path="/driver" element={<DriverApp />} />
           <Route path="/table/:tableId" element={<TableOrderApp />} />
           
-          {/* Rotas Master Admin */}
+          {/* Rotas Master Admin (Acessíveis via /gestor) */}
           <Route path="/admin/stores" element={<StoresPage />} />
-          
-          {/* Menu & Itens */}
           <Route path="/admin/menu/menu-categories" element={<MenuCategoriesPage />} />
           <Route path="/admin/menu/complements" element={<ComplementsPage />} />
           <Route path="/admin/menu/items" element={<ItemsPage />} />
-          
-          {/* Usuários */}
           <Route path="/admin/users/all" element={<UsersPage />} />
           <Route path="/admin/users/customers" element={<UsersPage />} />
           <Route path="/admin/users/owners" element={<UsersPage />} />
@@ -69,28 +79,18 @@ const App = () => (
           <Route path="/admin/users/staff" element={<UsersPage />} />
           <Route path="/admin/users/partners" element={<UsersPage />} />
           <Route path="/admin/users/edit/:id" element={<UserDetailsPage />} />
-          
-          {/* Pedidos & Salão */}
           <Route path="/admin/orders/list" element={<OrdersListPage />} />
           <Route path="/admin/orders/live" element={<LiveOrdersPage />} />
           <Route path="/admin/orders/manager" element={<OrderManagerPage />} />
           <Route path="/admin/orders/tables" element={<TableManagerPage />} />
-          
-          {/* Relatórios */}
           <Route path="/admin/reports/client" element={<GenericAdminPage title="Relatório de Clientes" />} />
           <Route path="/admin/reports/store" element={<GenericAdminPage title="Relatório de Lojas" />} />
-          
-          {/* Promoções */}
           <Route path="/admin/promos/slides" element={<SlidesPage />} />
           <Route path="/admin/promos/cat-slides" element={<SlidesPage />} />
           <Route path="/admin/promos/coupons" element={<CouponsPage />} />
           <Route path="/admin/promos/push" element={<PushNotificationsPage />} />
-          
-          {/* Transações & Carteiras */}
           <Route path="/admin/transactions/payments" element={<TransactionsPage />} />
           <Route path="/admin/transactions/wallet" element={<WalletPage />} />
-          
-          {/* Configurações */}
           <Route path="/admin/settings/zones" element={<GenericAdminPage title="Zonas (Franquias)" />} />
           <Route path="/admin/settings/all" element={<GenericAdminPage title="Todas as Configurações" />} />
 
