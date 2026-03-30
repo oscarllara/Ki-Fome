@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import PublicPortal from "./pages/PublicPortal";
 import DeliveryApp from "./pages/DeliveryApp";
+import RestaurantDetails from "./pages/RestaurantDetails";
 import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -58,6 +59,7 @@ const App = () => (
           
           {/* App do Cliente (Delivery) */}
           <Route path="/delivery" element={<DeliveryApp />} />
+          <Route path="/delivery/restaurant/:id" element={<RestaurantDetails />} />
           
           {/* App do Parceiro (Afiliado) */}
           <Route path="/partner" element={<PartnerApp />} />
