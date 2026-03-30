@@ -31,6 +31,7 @@ import WalletPage from "./pages/admin/WalletPage";
 // Apps Específicos
 import WaiterApp from "./pages/WaiterApp";
 import TableOrderApp from "./pages/TableOrderApp";
+import DriverApp from "./pages/DriverApp";
 
 const queryClient = new QueryClient();
 
@@ -47,8 +48,9 @@ const App = () => (
           <Route path="/delivery" element={<DeliveryApp />} />
           <Route path="/admin" element={<AdminDashboard />} />
           
-          {/* Apps de Salão */}
+          {/* Apps de Salão e Logística */}
           <Route path="/waiter" element={<WaiterApp />} />
+          <Route path="/driver" element={<DriverApp />} />
           <Route path="/table/:tableId" element={<TableOrderApp />} />
           
           {/* Rotas Master Admin */}
