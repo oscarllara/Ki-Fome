@@ -16,6 +16,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { showSuccess, showError } from "@/utils/toast";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const CATEGORIES = [
   { id: "promo", name: "Promo", icon: "🔥", color: "bg-orange-50" },
@@ -59,17 +61,24 @@ const DeliveryApp = () => {
   const [activeOrder, setActiveOrder] = useState<any>(null);
 
   useEffect(() => {
-    const savedAddr = localStorage.getItem("kifome_user_addresses");
-    if (savedAddr) {
-      const parsed = JSON.parse(savedAddr);
-      setAddresses(parsed);
-      setSelectedAddress(parsed.find((a: any) => a.isDefault) || parsed[0]);
-    }
+    try {
+      const savedAddr = localStorage.getItem("kifome_user_addresses");
+      if (savedAddr) {
+        const parsed = JSON.parse(savedAddr);
+        setAddresses(Array.isArray(parsed) ? parsed : []);
+        setSelectedAddress(parsed.find((a: any) => a.isDefault) || parsed[0]);
+      }
+    } catch (e) { console.error(e); }
 
     const checkActiveOrder = () => {
-      const orders = JSON.parse(localStorage.getItem("kifome_orders") || "[]");
-      const active = orders.find((o: any) => o.status !== 'DELIVERED' && o.status !== 'CANCELLED');
-      setActiveOrder(active);
+      try {
+        const savedOrders = localStorage.getItem("kifome_orders");
+        const orders = savedOrders ? JSON.parse(savedOrders) : [];
+        if (Array.isArray(orders)) {
+          const active = orders.find((o: any) => o.status !== 'DELIVERED' && o.status !== 'CANCELLED');
+          setActiveOrder(active);
+        }
+      } catch (e) { console.error(e); }
     };
 
     checkActiveOrder();
@@ -88,8 +97,9 @@ const DeliveryApp = () => {
           const city = data.address.city || data.address.town || "Sua Cidade";
           const newAddr = { id: Date.now(), nickname: city, street: data.address.road || "Rua Detectada", number: "S/N", isDefault: true };
           setSelectedAddress(newAddr);
-          setAddresses([newAddr, ...addresses]);
-          localStorage.setItem("kifome_user_addresses", JSON.stringify([newAddr, ...addresses]));
+          const updated = [newAddr, ...addresses];
+          setAddresses(updated);
+          localStorage.setItem("kifome_user_addresses", JSON.stringify(updated));
           showSuccess("Localização detectada!");
         } catch (e) { showError("Erro ao detectar endereço."); }
         finally { setIsLocating(false); setIsAddressModalOpen(false); }
@@ -125,7 +135,6 @@ const DeliveryApp = () => {
         </div>
       </header>
 
-      {/* Banner de Pedido Ativo */}
       {activeOrder && (
         <section className="px-6 pt-6">
           <div 
