@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, MapPin, CreditCard, Wallet, 
-  Banknote, ChevronRight, CheckCircle2, Loader2,
-  ShoppingBag, Clock, Percent, Plus, Minus, Trash2, Smartphone
+  Banknote, CheckCircle2, Loader2,
+  ShoppingBag, Plus, Minus, Smartphone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { showSuccess, showError } from "@/utils/toast";
+import MercadoPagoPayment from "@/components/MercadoPagoPayment";
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -17,6 +17,9 @@ const CheckoutPage = () => {
   const [paymentMethod, setPaymentMethod] = useState("pix");
   const [address, setAddress] = useState<any>(null);
   const [cart, setCart] = useState<any[]>([]);
+
+  // COLOQUE SUA PUBLIC KEY AQUI PARA TESTAR
+  const MP_PUBLIC_KEY = "TEST-e6888888-8888-8888-8888-888888888888"; 
 
   useEffect(() => {
     const savedAddr = localStorage.getItem("kifome_user_addresses");
@@ -58,12 +61,6 @@ const CheckoutPage = () => {
 
     setLoading(true);
     
-    // Simulação de Mercado Pago se for Online
-    if (paymentMethod === 'online') {
-      showSuccess("Redirecionando para o Mercado Pago...");
-      // Aqui entraria o SDK do Mercado Pago
-    }
-
     const newOrder = {
       id: `#${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
       customer: "Felipe Denis",
@@ -118,9 +115,7 @@ const CheckoutPage = () => {
 
         {/* Endereço */}
         <section className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Endereço de Entrega</h3>
-          </div>
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Endereço de Entrega</h3>
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600 shrink-0"><MapPin size={24} /></div>
             <div>
@@ -156,6 +151,11 @@ const CheckoutPage = () => {
             ))}
           </div>
         </section>
+
+        {/* Se for Online, mostra o Brick do Mercado Pago */}
+        {paymentMethod === 'online' && (
+          <MercadoPagoPayment publicKey={MP_PUBLIC_KEY} amount={total} orderId="TEMP_ID" />
+        )}
 
         {/* Resumo */}
         <section className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
