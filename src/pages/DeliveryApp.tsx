@@ -138,7 +138,11 @@ const DeliveryApp = () => {
       {activeOrder && (
         <section className="px-6 pt-6">
           <div 
-            onClick={() => navigate(`/delivery/track/${activeOrder.id}`)}
+            onClick={() => {
+              // Remove o # do ID antes de navegar para evitar erro 404
+              const cleanId = activeOrder.id.replace('#', '');
+              navigate(`/delivery/track/${cleanId}`);
+            }}
             className="bg-slate-900 p-6 rounded-[2.5rem] text-white flex items-center justify-between cursor-pointer hover:scale-[1.02] transition-all shadow-xl shadow-slate-200"
           >
             <div className="flex items-center gap-4">

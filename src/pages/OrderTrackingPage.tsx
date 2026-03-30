@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { 
   ArrowLeft, MapPin, Clock, CheckCircle2, 
   Truck, Utensils, Package, Star, Heart, 
@@ -16,6 +16,7 @@ import { showSuccess, showError } from "@/utils/toast";
 
 const OrderTrackingPage = () => {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [order, setOrder] = useState<any>(null);
   const [showRating, setShowRating] = useState(false);
@@ -24,9 +25,20 @@ const OrderTrackingPage = () => {
 
   const loadOrder = () => {
     try {
+      // Tenta pegar o ID da URL ou do fragmento (#) caso o roteador falhe
+      let orderId = id;
+      if (!orderId && location.hash) {
+        orderId = location.hash.replace('#', '');
+      }
+
+      if (!orderId) return;
+
       const savedOrders = localStorage.getItem("kifome_orders");
       const allOrders = savedOrders ? JSON.parse(savedOrders) : [];
-      const found = allOrders.find((o: any) => o.id === id);
+      
+      // Busca o pedido ignorando se ele tem # ou não no banco local
+      const found = allOrders.find((o: any) => o.id.replace('#', '') === orderId.replace('#', ''));
+      
       if (found) {
         setOrder(found);
         if (found.status === 'DELIVERED' && !showRating) {
@@ -42,7 +54,7 @@ const OrderTrackingPage = () => {
     loadOrder();
     const interval = setInterval(loadOrder, 3000);
     return () => clearInterval(interval);
-  }, [id]);
+  }, [id, location.hash]);
 
   const getStatusStep = () => {
     const steps: any = { 'PENDING': 1, 'PREPARING': 2, 'READY': 3, 'SHIPPING': 4, 'DELIVERED': 5 };
@@ -86,6 +98,7 @@ const OrderTrackingPage = () => {
         <div className="text-center space-y-4">
           <Clock className="mx-auto text-slate-300 animate-spin" size={48} />
           <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Carregando pedido...</p>
+          <Button onClick={() => navigate("/delivery")} variant="link" className="text-orange-600 font-bold">Voltar ao Início</Button>
         </div>
       </div>
     );
@@ -99,7 +112,7 @@ const OrderTrackingPage = () => {
         </Button>
         <div>
           <h1 className="text-lg font-black uppercase tracking-tight">Acompanhar Pedido</h1>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">#{order.id}</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">#{order.id.replace('#', '')}</p>
         </div>
       </header>
 
