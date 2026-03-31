@@ -18,6 +18,7 @@ const CheckoutPage = () => {
   const [address, setAddress] = useState<any>(null);
   const [cart, setCart] = useState<any[]>([]);
 
+  // Sua Public Key real fornecida
   const MP_PUBLIC_KEY = "APP_USR-d0b5b319-7a4b-4ed5-9639-08f993aab379"; 
 
   useEffect(() => {
@@ -60,7 +61,6 @@ const CheckoutPage = () => {
 
     setLoading(true);
     
-    // Gerando ID sem o caractere # para não quebrar a URL
     const orderId = Math.random().toString(36).substr(2, 9).toUpperCase();
 
     const newOrder = {
@@ -83,8 +83,13 @@ const CheckoutPage = () => {
       setLoading(false);
       localStorage.removeItem("kifome_cart");
       showSuccess("Pedido enviado com sucesso!");
-      navigate(`/delivery/track/${orderId}`); // Redireciona direto para o acompanhamento
+      navigate(`/delivery/track/${orderId}`);
     }, 2000);
+  };
+
+  const handlePaymentSuccess = (details: any) => {
+    console.log("Pagamento aprovado:", details);
+    handlePlaceOrder();
   };
 
   return (
@@ -152,7 +157,12 @@ const CheckoutPage = () => {
         </section>
 
         {paymentMethod === 'online' && (
-          <MercadoPagoPayment publicKey={MP_PUBLIC_KEY} amount={total} orderId="TEMP_ID" />
+          <MercadoPagoPayment 
+            publicKey={MP_PUBLIC_KEY} 
+            amount={total} 
+            orderId="TEMP_ID" 
+            onPaymentSuccess={handlePaymentSuccess}
+          />
         )}
 
         <section className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">

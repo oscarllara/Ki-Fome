@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { showSuccess, showError } from "@/utils/toast";
+import { CreditCard, Loader2 } from "lucide-react";
 
 interface MercadoPagoPaymentProps {
   publicKey: string;
@@ -12,7 +13,6 @@ interface MercadoPagoPaymentProps {
 
 const MercadoPagoPayment = ({ publicKey, amount, orderId, onPaymentSuccess }: MercadoPagoPaymentProps) => {
   useEffect(() => {
-    // Verifica se o SDK foi carregado no index.html
     // @ts-ignore
     if (!window.MercadoPago) {
       showError("Erro ao carregar SDK do Mercado Pago.");
@@ -30,8 +30,6 @@ const MercadoPagoPayment = ({ publicKey, amount, orderId, onPaymentSuccess }: Me
       const settings = {
         initialization: {
           amount: amount,
-          // Se for usar Checkout Pro, você precisaria de um preferenceId gerado no backend
-          // preferenceId: "ID_GERADO_NO_BACKEND", 
         },
         customization: {
           paymentMethods: {
@@ -43,47 +41,29 @@ const MercadoPagoPayment = ({ publicKey, amount, orderId, onPaymentSuccess }: Me
           },
           visual: {
             style: {
-              theme: 'default', // ou 'dark'
+              theme: 'default',
             }
           }
         },
         callbacks: {
           onReady: () => {
-            console.log("Mercado Pago Brick está pronto.");
+            console.log("Mercado Pago Brick pronto.");
           },
           onSubmit: async ({ selectedPaymentMethod, formData }: any) => {
-            // ESTA É A PARTE QUE ENVIA PARA O SEU SERVIDOR
-            console.log("Dados gerados pelo Brick:", formData);
-            
             try {
-              showSuccess("Comunicando com o servidor de pagamento...");
+              showSuccess("Processando pagamento...");
               
-              /* 
-                EXEMPLO DE COMO SERIA A CHAMADA REAL:
-                
-                const response = await fetch("SUA_API_URL/process_payment", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(formData)
-                });
-                
-                const result = await response.json();
-                if (result.status === 'approved') {
-                  onPaymentSuccess(result);
-                }
-              */
-
-              // Simulação de sucesso para o protótipo
+              // Simulação de sucesso (Aqui chamaremos a Edge Function do Supabase no futuro)
               return new Promise((resolve) => {
                 setTimeout(() => {
-                  showSuccess("Pagamento aprovado com sucesso!");
+                  showSuccess("Pagamento aprovado!");
                   onPaymentSuccess({ status: 'approved', id: 'MP-' + Date.now() });
                   resolve(true);
                 }, 2000);
               });
 
             } catch (error) {
-              showError("Erro ao processar pagamento no servidor.");
+              showError("Erro ao processar pagamento.");
               console.error(error);
             }
           },
@@ -94,7 +74,6 @@ const MercadoPagoPayment = ({ publicKey, amount, orderId, onPaymentSuccess }: Me
         },
       };
       
-      // Limpa o container antes de renderizar (evita duplicatas)
       const container = document.getElementById("paymentBrick_container");
       if (container) container.innerHTML = "";
       
@@ -118,7 +97,7 @@ const MercadoPagoPayment = ({ publicKey, amount, orderId, onPaymentSuccess }: Me
       
       <div id="paymentBrick_container">
         <div className="flex flex-col items-center justify-center py-10 text-slate-300">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <Loader2 className="animate-spin text-blue-600 mb-4" size={32} />
           <p className="text-[10px] font-black uppercase tracking-widest">Carregando checkout seguro...</p>
         </div>
       </div>
@@ -126,5 +105,4 @@ const MercadoPagoPayment = ({ publicKey, amount, orderId, onPaymentSuccess }: Me
   );
 };
 
-import { CreditCard } from "lucide-react";
 export default MercadoPagoPayment;
