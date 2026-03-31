@@ -14,11 +14,10 @@ import MercadoPagoPayment from "@/components/MercadoPagoPayment";
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("pix");
+  const [paymentMethod, setPaymentMethod] = useState("online"); // Definido como padrão para teste
   const [address, setAddress] = useState<any>(null);
   const [cart, setCart] = useState<any[]>([]);
 
-  // Sua Public Key real fornecida
   const MP_PUBLIC_KEY = "APP_USR-d0b5b319-7a4b-4ed5-9639-08f993aab379"; 
 
   useEffect(() => {
@@ -49,7 +48,7 @@ const CheckoutPage = () => {
   const deliveryFee = 5.00;
   const total = subtotal + deliveryFee;
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = (paymentDetails?: any) => {
     if (!address) {
       showError("Selecione um endereço de entrega.");
       return;
@@ -72,6 +71,8 @@ const CheckoutPage = () => {
       total: `R$ ${total.toFixed(2)}`,
       status: 'PENDING',
       paymentMethod: paymentMethod.toUpperCase(),
+      paymentStatus: paymentDetails ? 'PAID' : 'PENDING',
+      paymentId: paymentDetails?.id || null,
       time: "Agora",
       createdAt: new Date().toISOString()
     };
@@ -82,14 +83,9 @@ const CheckoutPage = () => {
     setTimeout(() => {
       setLoading(false);
       localStorage.removeItem("kifome_cart");
-      showSuccess("Pedido enviado com sucesso!");
+      showSuccess("Pedido confirmado!");
       navigate(`/delivery/track/${orderId}`);
-    }, 2000);
-  };
-
-  const handlePaymentSuccess = (details: any) => {
-    console.log("Pagamento aprovado:", details);
-    handlePlaceOrder();
+    }, 1500);
   };
 
   return (
@@ -100,6 +96,7 @@ const CheckoutPage = () => {
       </header>
 
       <main className="p-6 space-y-6 max-w-2xl mx-auto">
+        {/* Resumo do Carrinho */}
         <section className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Seu Pedido</h3>
           <div className="divide-y divide-slate-50">
@@ -119,6 +116,7 @@ const CheckoutPage = () => {
           </div>
         </section>
 
+        {/* Endereço */}
         <section className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Endereço de Entrega</h3>
           <div className="flex items-start gap-4">
@@ -130,12 +128,13 @@ const CheckoutPage = () => {
           </div>
         </section>
 
+        {/* Formas de Pagamento */}
         <section className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Forma de Pagamento</h3>
           <div className="grid grid-cols-1 gap-3">
             {[
-              { id: 'pix', name: 'PIX (Automático)', icon: <Wallet size={20} />, color: 'text-emerald-600' },
               { id: 'online', name: 'Cartão Online (Mercado Pago)', icon: <Smartphone size={20} />, color: 'text-blue-500' },
+              { id: 'pix', name: 'PIX (Automático)', icon: <Wallet size={20} />, color: 'text-emerald-600' },
               { id: 'machine', name: 'Cartão (Máquina da Loja)', icon: <CreditCard size={20} />, color: 'text-blue-600' },
               { id: 'money', name: 'Dinheiro', icon: <Banknote size={20} />, color: 'text-emerald-500' },
             ].map((method) => (
@@ -156,15 +155,19 @@ const CheckoutPage = () => {
           </div>
         </section>
 
+        {/* Componente Mercado Pago (Aparece apenas se 'online' for selecionado) */}
         {paymentMethod === 'online' && (
-          <MercadoPagoPayment 
-            publicKey={MP_PUBLIC_KEY} 
-            amount={total} 
-            orderId="TEMP_ID" 
-            onPaymentSuccess={handlePaymentSuccess}
-          />
+          <div className="animate-in fade-in slide-in-from-bottom-4">
+            <MercadoPagoPayment 
+              publicKey={MP_PUBLIC_KEY} 
+              amount={total} 
+              orderId="TEMP_ID" 
+              onPaymentSuccess={handlePlaceOrder}
+            />
+          </div>
         )}
 
+        {/* Totais */}
         <section className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
           <div className="flex justify-between text-sm font-bold text-slate-500"><span>Subtotal</span><span>R$ {subtotal.toFixed(2)}</span></div>
           <div className="flex justify-between text-sm font-bold text-emerald-600"><span>Taxa de Entrega</span><span>R$ {deliveryFee.toFixed(2)}</span></div>
@@ -175,12 +178,15 @@ const CheckoutPage = () => {
         </section>
       </main>
 
-      <div className="fixed bottom-8 left-6 right-6 max-w-2xl mx-auto z-50">
-        <Button onClick={handlePlaceOrder} disabled={loading || cart.length === 0} className="w-full h-16 bg-orange-600 hover:bg-orange-700 text-white rounded-[2rem] shadow-2xl font-black uppercase tracking-widest text-[11px] flex gap-3">
-          {loading ? <Loader2 className="animate-spin" size={20} /> : <ShoppingBag size={20} />}
-          {loading ? "Processando..." : "Finalizar Pedido"}
-        </Button>
-      </div>
+      {/* Botão de Finalizar (Escondido se for Pagamento Online, pois o MP tem o próprio botão) */}
+      {paymentMethod !== 'online' && (
+        <div className="fixed bottom-8 left-6 right-6 max-w-2xl mx-auto z-50">
+          <Button onClick={() => handlePlaceOrder()} disabled={loading || cart.length === 0} className="w-full h-16 bg-orange-600 hover:bg-orange-700 text-white rounded-[2rem] shadow-2xl font-black uppercase tracking-widest text-[11px] flex gap-3">
+            {loading ? <Loader2 className="animate-spin" size={20} /> : <ShoppingBag size={20} />}
+            {loading ? "Processando..." : "Finalizar Pedido"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
