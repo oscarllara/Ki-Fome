@@ -5,7 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, MapPin, CreditCard, Wallet, 
   Banknote, CheckCircle2, Loader2,
-  ShoppingBag, Plus, Minus, Smartphone, Navigation
+  ShoppingBag, Plus, Minus, Smartphone, Navigation,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { showSuccess, showError } from "@/utils/toast";

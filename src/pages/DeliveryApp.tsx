@@ -123,7 +123,12 @@ const DeliveryApp = () => {
           </div>
           <div className="flex gap-2">
             <Button variant="ghost" size="icon" className="rounded-2xl bg-slate-50 text-slate-600"><Bell size={20} /></Button>
-            <Button variant="ghost" size="icon" className="rounded-2xl bg-orange-50 text-orange-600 relative">
+            <Button 
+              onClick={() => navigate("/delivery/checkout")}
+              variant="ghost" 
+              size="icon" 
+              className="rounded-2xl bg-orange-50 text-orange-600 relative"
+            >
               <ShoppingCart size={20} />
             </Button>
           </div>
@@ -139,7 +144,6 @@ const DeliveryApp = () => {
         <section className="px-6 pt-6">
           <div 
             onClick={() => {
-              // Remove o # do ID antes de navegar para evitar erro 404
               const cleanId = activeOrder.id.replace('#', '');
               navigate(`/delivery/track/${cleanId}`);
             }}
