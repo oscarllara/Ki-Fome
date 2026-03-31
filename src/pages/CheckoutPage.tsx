@@ -6,9 +6,11 @@ import {
   ArrowLeft, MapPin, CreditCard, Wallet, 
   Banknote, CheckCircle2, Loader2,
   ShoppingBag, Plus, Minus, Smartphone, Navigation,
-  ChevronRight
+  ChevronRight, MapPinned, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { showSuccess, showError } from "@/utils/toast";
 import MercadoPagoPayment from "@/components/MercadoPagoPayment";
 import {
@@ -16,6 +18,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 
 const CheckoutPage = () => {
@@ -27,6 +30,15 @@ const CheckoutPage = () => {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
 
+  // Estados do formulário de endereço
+  const [addrForm, setAddrForm] = useState({
+    street: "",
+    number: "",
+    neighborhood: "",
+    reference: "",
+    nickname: "Minha Casa"
+  });
+
   const MP_PUBLIC_KEY = "APP_USR-d0b5b319-7a4b-4ed5-9639-08f993aab379"; 
 
   useEffect(() => {
@@ -36,6 +48,15 @@ const CheckoutPage = () => {
         const parsed = JSON.parse(savedAddr);
         const current = parsed.find((a: any) => a.isDefault) || parsed[0];
         setAddress(current);
+        if (current) {
+          setAddrForm({
+            street: current.street || "",
+            number: current.number || "",
+            neighborhood: current.neighborhood || "",
+            reference: current.reference || "",
+            nickname: current.nickname || "Minha Casa"
+          });
+        }
       }
 
       const savedCart = localStorage.getItem("kifome_cart");
@@ -52,30 +73,40 @@ const CheckoutPage = () => {
         try {
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
           const data = await response.json();
-          const city = data.address.city || data.address.town || "Sua Cidade";
-          const newAddr = { 
-            id: Date.now(), 
-            nickname: "Minha Localização", 
-            street: data.address.road || "Rua Detectada", 
-            number: "S/N", 
-            neighborhood: data.address.suburb || "Bairro",
-            isDefault: true 
-          };
-          setAddress(newAddr);
-          localStorage.setItem("kifome_user_addresses", JSON.stringify([newAddr]));
-          showSuccess("Endereço definido!");
+          
+          setAddrForm(prev => ({
+            ...prev,
+            street: data.address.road || "",
+            neighborhood: data.address.suburb || data.address.neighbourhood || "",
+          }));
+          showSuccess("Localização detectada! Por favor, insira o número.");
         } catch (e) { showError("Erro ao detectar endereço."); }
-        finally { setIsLocating(false); setIsAddressModalOpen(false); }
+        finally { setIsLocating(false); }
       },
       () => { 
-        showError("GPS negado. Usando endereço de teste."); 
-        const testAddr = { id: 1, nickname: "Teste", street: "Rua de Teste", number: "123", neighborhood: "Centro", isDefault: true };
-        setAddress(testAddr);
-        localStorage.setItem("kifome_user_addresses", JSON.stringify([testAddr]));
+        showError("GPS negado ou indisponível."); 
         setIsLocating(false); 
-        setIsAddressModalOpen(false); 
       }
     );
+  };
+
+  const handleSaveAddress = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addrForm.street || !addrForm.number || !addrForm.neighborhood) {
+      showError("Preencha os campos obrigatórios (Rua, Número e Bairro).");
+      return;
+    }
+
+    const newAddr = { 
+      ...addrForm,
+      id: Date.now(), 
+      isDefault: true 
+    };
+    
+    setAddress(newAddr);
+    localStorage.setItem("kifome_user_addresses", JSON.stringify([newAddr]));
+    showSuccess("Endereço salvo!");
+    setIsAddressModalOpen(false);
   };
 
   const updateQty = (id: number, delta: number) => {
@@ -114,6 +145,7 @@ const CheckoutPage = () => {
       customer: "Felipe Denis",
       phone: "(88) 99926-6723",
       address: `${address.street}, ${address.number} - ${address.neighborhood}`,
+      reference: address.reference || "",
       items: cart.map(i => `${i.qty}x ${i.name}`),
       total: `R$ ${total.toFixed(2)}`,
       status: 'PENDING',
@@ -173,7 +205,12 @@ const CheckoutPage = () => {
               {address ? (
                 <>
                   <p className="font-black text-slate-900 uppercase text-sm">{address.nickname}</p>
-                  <p className="text-xs text-slate-500 font-medium">{address.street}, {address.number}</p>
+                  <p className="text-xs text-slate-500 font-medium">{address.street}, {address.number} - {address.neighborhood}</p>
+                  {address.reference && (
+                    <p className="text-[10px] text-orange-600 font-bold uppercase mt-1 flex items-center gap-1">
+                      <Info size={10} /> Ref: {address.reference}
+                    </p>
+                  )}
                 </>
               ) : (
                 <p className="text-sm font-black text-orange-600 uppercase">Clique para definir endereço</p>
@@ -240,14 +277,89 @@ const CheckoutPage = () => {
       )}
 
       <Dialog open={isAddressModalOpen} onOpenChange={setIsAddressModalOpen}>
-        <DialogContent className="max-w-md rounded-[2.5rem] p-8">
-          <DialogHeader><DialogTitle className="text-xl font-black uppercase tracking-tight">Endereço de Entrega</DialogTitle></DialogHeader>
-          <div className="space-y-4 pt-6">
-            <Button onClick={handleGetCurrentLocation} disabled={isLocating} variant="outline" className="w-full h-16 rounded-2xl border-orange-100 bg-orange-50/50 text-orange-600 font-black uppercase text-[10px] tracking-widest gap-3">
-              {isLocating ? <Loader2 className="animate-spin" size={20} /> : <Navigation size={20} />}
-              {isLocating ? "Localizando..." : "Usar minha localização atual"}
-            </Button>
-          </div>
+        <DialogContent className="max-w-lg rounded-[2.5rem] p-0 overflow-hidden shadow-2xl border-none">
+          <form onSubmit={handleSaveAddress}>
+            <DialogHeader className="p-8 bg-slate-900 text-white">
+              <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-3">
+                <MapPinned className="text-orange-500" /> Endereço de Entrega
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="p-8 space-y-6 max-h-[60vh] overflow-y-auto no-scrollbar">
+              <Button 
+                type="button"
+                onClick={handleGetCurrentLocation} 
+                disabled={isLocating} 
+                variant="outline" 
+                className="w-full h-14 rounded-2xl border-orange-100 bg-orange-50/50 text-orange-600 font-black uppercase text-[10px] tracking-widest gap-3 mb-4"
+              >
+                {isLocating ? <Loader2 className="animate-spin" size={20} /> : <Navigation size={20} />}
+                {isLocating ? "Localizando..." : "Usar minha localização atual"}
+              </Button>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Rua / Logradouro</Label>
+                  <Input 
+                    value={addrForm.street} 
+                    onChange={(e) => setAddrForm({...addrForm, street: e.target.value})} 
+                    placeholder="Ex: Av. Paulista" 
+                    className="rounded-xl h-12 font-bold" 
+                    required 
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Número</Label>
+                    <Input 
+                      value={addrForm.number} 
+                      onChange={(e) => setAddrForm({...addrForm, number: e.target.value})} 
+                      placeholder="123" 
+                      className="rounded-xl h-12 font-bold" 
+                      required 
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Bairro</Label>
+                    <Input 
+                      value={addrForm.neighborhood} 
+                      onChange={(e) => setAddrForm({...addrForm, neighborhood: e.target.value})} 
+                      placeholder="Ex: Centro" 
+                      className="rounded-xl h-12 font-bold" 
+                      required 
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Ponto de Referência</Label>
+                  <Input 
+                    value={addrForm.reference} 
+                    onChange={(e) => setAddrForm({...addrForm, reference: e.target.value})} 
+                    placeholder="Ex: Próximo ao mercado central" 
+                    className="rounded-xl h-12 font-bold" 
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Apelido (Ex: Casa, Trabalho)</Label>
+                  <Input 
+                    value={addrForm.nickname} 
+                    onChange={(e) => setAddrForm({...addrForm, nickname: e.target.value})} 
+                    className="rounded-xl h-12 font-bold" 
+                  />
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="p-8 bg-slate-50 border-t flex gap-4">
+              <Button type="button" variant="ghost" onClick={() => setIsAddressModalOpen(false)} className="rounded-xl font-bold uppercase text-[10px] h-12 flex-1">Cancelar</Button>
+              <Button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-black uppercase tracking-widest text-[10px] h-12 flex-1 shadow-xl shadow-orange-100">
+                Salvar Endereço
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
