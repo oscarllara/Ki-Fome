@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import OrderTrackingPage from "./pages/OrderTrackingPage";
 import SearchPage from "./pages/SearchPage";
 import ClientOrdersPage from "./pages/ClientOrdersPage";
+import SplitPreview from "./pages/SplitPreview";
 
 // Páginas Administrativas
 import StoresPage from "./pages/admin/StoresPage";
@@ -63,6 +64,7 @@ const App = () => (
           <Route path="/waiter" element={<WaiterApp />} />
           <Route path="/driver" element={<DriverApp />} />
           <Route path="/table/:tableId" element={<TableOrderApp />} />
+          <Route path="/split" element={<SplitPreview />} />
           <Route path="/admin/stores" element={<StoresPage />} />
           <Route path="/admin/menu/menu-categories" element={<MenuCategoriesPage />} />
           <Route path="/admin/menu/complements" element={<ComplementsPage />} />

@@ -4,15 +4,16 @@ import { Button } from "@/components/ui/button";
 import { 
   ShoppingBag, Star, ShieldCheck, MapPin, ArrowRight, 
   Smartphone, Lock, UserCog, Store, Users, Utensils, 
-  Truck, QrCode, LayoutDashboard 
+  Truck, QrCode, LayoutDashboard, ArrowLeftRight 
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const PublicPortal = () => {
   const apps = [
+    { title: "Modo Simulação", desc: "Cliente + Lojista Lado a Lado", icon: <ArrowLeftRight />, path: "/split", color: "bg-orange-600" },
     { title: "Gestor Master", desc: "Painel do Dono do Sistema", icon: <LayoutDashboard />, path: "/gestor", color: "bg-slate-900" },
     { title: "Painel Lojista", desc: "Gestão do Restaurante", icon: <Store />, path: "/admin", color: "bg-blue-600" },
-    { title: "App Delivery", desc: "Interface do Cliente", icon: <ShoppingBag />, path: "/delivery", color: "bg-orange-600" },
+    { title: "App Delivery", desc: "Interface do Cliente", icon: <ShoppingBag />, path: "/delivery", color: "bg-orange-500" },
     { title: "App Parceiro", desc: "Ganhos e Afiliados", icon: <Users />, path: "/partner", color: "bg-purple-600" },
     { title: "App Garçom", desc: "Lançamento em Salão", icon: <Utensils />, path: "/waiter", color: "bg-emerald-600" },
     { title: "App Entregador", desc: "Logística e Coletas", icon: <Truck />, path: "/driver", color: "bg-indigo-600" },
@@ -59,11 +60,11 @@ const PublicPortal = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-            <a href="#atalhos">
+            <Link to="/split">
               <Button size="lg" className="bg-orange-600 hover:bg-orange-700 h-16 px-10 rounded-2xl text-lg font-black shadow-xl shadow-orange-100 group uppercase">
-                EXPLORAR INTERFACES <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                MODO SIMULAÇÃO <ArrowLeftRight className="ml-2 group-hover:rotate-180 transition-transform duration-500" />
               </Button>
-            </a>
+            </Link>
           </div>
         </div>
 
