@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ki-Fome</string>
+    <string name="title_activity_main">Ki-Fome</string>
+    <string name="package_name">com.example.kifome</string>
+    <string name="custom_url_scheme">com.example.kifome</string>
+</resources>
