@@ -5,19 +5,27 @@ import { useNavigate } from "react-router-dom";
 import { 
   Search, MapPin, ShoppingCart, Utensils, 
   ShoppingBag, User, Bell, CheckCircle2, 
-  Plus, Navigation, Loader2, ChevronRight, Clock, ArrowRight 
+  Plus, Navigation, Loader2, ChevronRight, Clock, ArrowRight,
+  Ticket, Flame, X
 } from "lucide-react";
 import RestaurantCard from "@/components/RestaurantCard";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { showSuccess, showError } from "@/utils/toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const CATEGORIES = [
   { id: "promo", name: "Promo", icon: "🔥", color: "bg-orange-50" },
@@ -59,6 +67,10 @@ const DeliveryApp = () => {
   const [addresses, setAddresses] = useState<any[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<any>(null);
   const [activeOrder, setActiveOrder] = useState<any>(null);
+  const [notifications, setNotifications] = useState<any[]>([
+    { id: 1, title: "Cupom Disponível!", desc: "Use KIFOME20 e ganhe R$ 20 OFF.", type: "promo", time: "2h atrás" },
+    { id: 2, title: "Novidade na Área", desc: "Pizzaria della Mamma agora aceita PIX.", type: "info", time: "5h atrás" }
+  ]);
 
   useEffect(() => {
     try {
@@ -77,6 +89,22 @@ const DeliveryApp = () => {
         if (Array.isArray(orders)) {
           const active = orders.find((o: any) => o.status !== 'DELIVERED' && o.status !== 'CANCELLED');
           setActiveOrder(active);
+          
+          if (active) {
+            const orderNotif = {
+              id: `order-${active.id}`,
+              title: "Status do Pedido",
+              desc: `Seu pedido ${active.id} está em status: ${active.status}`,
+              type: "order",
+              orderId: active.id.replace('#', ''),
+              time: "Agora"
+            };
+            setNotifications(prev => {
+              const exists = prev.find(n => n.id === orderNotif.id);
+              if (exists && exists.desc === orderNotif.desc) return prev;
+              return [orderNotif, ...prev.filter(n => n.id !== orderNotif.id)];
+            });
+          }
         }
       } catch (e) { console.error(e); }
     };
@@ -122,7 +150,50 @@ const DeliveryApp = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" size="icon" className="rounded-2xl bg-slate-50 text-slate-600"><Bell size={20} /></Button>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-2xl bg-slate-50 text-slate-600 relative">
+                  <Bell size={20} />
+                  {notifications.length > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-orange-600 rounded-full border-2 border-white"></span>}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:max-w-md p-0 rounded-l-[3rem] border-none shadow-2xl">
+                <SheetHeader className="p-8 bg-slate-900 text-white rounded-bl-[3rem]">
+                  <SheetTitle className="text-2xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+                    <Bell className="text-orange-500" /> Notificações
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(100vh-150px)] no-scrollbar">
+                  {notifications.length > 0 ? notifications.map(n => (
+                    <div 
+                      key={n.id} 
+                      onClick={() => {
+                        if (n.type === 'order') navigate(`/delivery/track/${n.orderId}`);
+                        else navigate("/delivery");
+                      }}
+                      className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 flex gap-4 cursor-pointer hover:bg-orange-50 hover:border-orange-100 transition-all group"
+                    >
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${n.type === 'promo' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
+                        {n.type === 'promo' ? <Ticket size={20} /> : n.type === 'order' ? <ShoppingBag size={20} /> : <Flame size={20} />}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                          <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{n.title}</h4>
+                          <span className="text-[8px] font-bold text-slate-400 uppercase">{n.time}</span>
+                        </div>
+                        <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">{n.desc}</p>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="py-20 text-center text-slate-300">
+                      <Bell size={48} className="mx-auto mb-4 opacity-20" />
+                      <p className="text-xs font-black uppercase tracking-widest">Nenhuma notificação</p>
+                    </div>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+
             <Button 
               onClick={() => navigate("/delivery/checkout")}
               variant="ghost" 
@@ -134,9 +205,11 @@ const DeliveryApp = () => {
           </div>
         </div>
         
-        <div className="relative group">
+        <div onClick={() => navigate("/delivery/search")} className="relative group cursor-pointer">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <Input placeholder="Buscar pratos ou restaurantes..." className="pl-12 h-14 bg-slate-50 border-none rounded-2xl font-medium" />
+          <div className="w-full h-14 bg-slate-50 rounded-2xl flex items-center pl-12 text-slate-400 font-medium">
+            Buscar pratos ou restaurantes...
+          </div>
         </div>
       </header>
 
@@ -201,8 +274,8 @@ const DeliveryApp = () => {
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 px-10 py-4 flex justify-between items-center z-50">
         <button onClick={() => navigate("/delivery")} className="text-orange-600 flex flex-col items-center gap-1"><Utensils size={24} /><span className="text-[10px] font-black uppercase tracking-tighter">Início</span></button>
-        <button className="text-slate-400 flex flex-col items-center gap-1"><Search size={24} /><span className="text-[10px] font-black uppercase tracking-tighter">Busca</span></button>
-        <button className="text-slate-400 flex flex-col items-center gap-1"><ShoppingBag size={24} /><span className="text-[10px] font-black uppercase tracking-tighter">Pedidos</span></button>
+        <button onClick={() => navigate("/delivery/search")} className="text-slate-400 flex flex-col items-center gap-1"><Search size={24} /><span className="text-[10px] font-black uppercase tracking-tighter">Busca</span></button>
+        <button onClick={() => navigate("/delivery/orders")} className="text-slate-400 flex flex-col items-center gap-1"><ShoppingBag size={24} /><span className="text-[10px] font-black uppercase tracking-tighter">Pedidos</span></button>
         <button onClick={() => navigate("/login")} className="text-slate-400 flex flex-col items-center gap-1"><User size={24} /><span className="text-[10px] font-black uppercase tracking-tighter">Perfil</span></button>
       </nav>
     </div>

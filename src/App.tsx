@@ -12,6 +12,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import OrderTrackingPage from "./pages/OrderTrackingPage";
+import SearchPage from "./pages/SearchPage";
+import ClientOrdersPage from "./pages/ClientOrdersPage";
 
 // Páginas Administrativas
 import StoresPage from "./pages/admin/StoresPage";
@@ -52,6 +54,8 @@ const App = () => (
           <Route path="/gestor" element={<Index />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/delivery" element={<DeliveryApp />} />
+          <Route path="/delivery/search" element={<SearchPage />} />
+          <Route path="/delivery/orders" element={<ClientOrdersPage />} />
           <Route path="/delivery/restaurant/:id" element={<RestaurantDetails />} />
           <Route path="/delivery/checkout" element={<CheckoutPage />} />
           <Route path="/delivery/track/:id" element={<OrderTrackingPage />} />
