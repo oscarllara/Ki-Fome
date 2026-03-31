@@ -5,31 +5,77 @@ import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, MapPin, CreditCard, Wallet, 
   Banknote, CheckCircle2, Loader2,
-  ShoppingBag, Plus, Minus, Smartphone
+  ShoppingBag, Plus, Minus, Smartphone, Navigation
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { showSuccess, showError } from "@/utils/toast";
 import MercadoPagoPayment from "@/components/MercadoPagoPayment";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("online"); // Definido como padrão para teste
+  const [paymentMethod, setPaymentMethod] = useState("online");
   const [address, setAddress] = useState<any>(null);
   const [cart, setCart] = useState<any[]>([]);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
 
   const MP_PUBLIC_KEY = "APP_USR-d0b5b319-7a4b-4ed5-9639-08f993aab379"; 
 
   useEffect(() => {
-    const savedAddr = localStorage.getItem("kifome_user_addresses");
-    if (savedAddr) {
-      const parsed = JSON.parse(savedAddr);
-      setAddress(parsed.find((a: any) => a.isDefault) || parsed[0]);
-    }
+    const loadData = () => {
+      const savedAddr = localStorage.getItem("kifome_user_addresses");
+      if (savedAddr) {
+        const parsed = JSON.parse(savedAddr);
+        const current = parsed.find((a: any) => a.isDefault) || parsed[0];
+        setAddress(current);
+      }
 
-    const savedCart = localStorage.getItem("kifome_cart");
-    if (savedCart) setCart(JSON.parse(savedCart));
+      const savedCart = localStorage.getItem("kifome_cart");
+      if (savedCart) setCart(JSON.parse(savedCart));
+    };
+    loadData();
   }, []);
+
+  const handleGetCurrentLocation = () => {
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await response.json();
+          const city = data.address.city || data.address.town || "Sua Cidade";
+          const newAddr = { 
+            id: Date.now(), 
+            nickname: "Minha Localização", 
+            street: data.address.road || "Rua Detectada", 
+            number: "S/N", 
+            neighborhood: data.address.suburb || "Bairro",
+            isDefault: true 
+          };
+          setAddress(newAddr);
+          localStorage.setItem("kifome_user_addresses", JSON.stringify([newAddr]));
+          showSuccess("Endereço definido!");
+        } catch (e) { showError("Erro ao detectar endereço."); }
+        finally { setIsLocating(false); setIsAddressModalOpen(false); }
+      },
+      () => { 
+        showError("GPS negado. Usando endereço de teste."); 
+        const testAddr = { id: 1, nickname: "Teste", street: "Rua de Teste", number: "123", neighborhood: "Centro", isDefault: true };
+        setAddress(testAddr);
+        localStorage.setItem("kifome_user_addresses", JSON.stringify([testAddr]));
+        setIsLocating(false); 
+        setIsAddressModalOpen(false); 
+      }
+    );
+  };
 
   const updateQty = (id: number, delta: number) => {
     const newCart = cart.map(item => {
@@ -50,7 +96,8 @@ const CheckoutPage = () => {
 
   const handlePlaceOrder = (paymentDetails?: any) => {
     if (!address) {
-      showError("Selecione um endereço de entrega.");
+      setIsAddressModalOpen(true);
+      showError("Por favor, defina um endereço de entrega.");
       return;
     }
     if (cart.length === 0) {
@@ -59,11 +106,10 @@ const CheckoutPage = () => {
     }
 
     setLoading(true);
-    
     const orderId = Math.random().toString(36).substr(2, 9).toUpperCase();
 
     const newOrder = {
-      id: orderId,
+      id: `#${orderId}`,
       customer: "Felipe Denis",
       phone: "(88) 99926-6723",
       address: `${address.street}, ${address.number} - ${address.neighborhood}`,
@@ -96,7 +142,6 @@ const CheckoutPage = () => {
       </header>
 
       <main className="p-6 space-y-6 max-w-2xl mx-auto">
-        {/* Resumo do Carrinho */}
         <section className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Seu Pedido</h3>
           <div className="divide-y divide-slate-50">
@@ -116,19 +161,27 @@ const CheckoutPage = () => {
           </div>
         </section>
 
-        {/* Endereço */}
-        <section className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+        <section 
+          onClick={() => setIsAddressModalOpen(true)}
+          className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm cursor-pointer hover:border-orange-200 transition-all"
+        >
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Endereço de Entrega</h3>
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600 shrink-0"><MapPin size={24} /></div>
-            <div>
-              <p className="font-black text-slate-900 uppercase text-sm">{address?.nickname || "Selecione um endereço"}</p>
-              <p className="text-xs text-slate-500 font-medium">{address ? `${address.street}, ${address.number}` : "Nenhum endereço selecionado"}</p>
+            <div className="flex-1">
+              {address ? (
+                <>
+                  <p className="font-black text-slate-900 uppercase text-sm">{address.nickname}</p>
+                  <p className="text-xs text-slate-500 font-medium">{address.street}, {address.number}</p>
+                </>
+              ) : (
+                <p className="text-sm font-black text-orange-600 uppercase">Clique para definir endereço</p>
+              )}
             </div>
+            <ChevronRight className="text-slate-300" />
           </div>
         </section>
 
-        {/* Formas de Pagamento */}
         <section className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Forma de Pagamento</h3>
           <div className="grid grid-cols-1 gap-3">
@@ -155,8 +208,7 @@ const CheckoutPage = () => {
           </div>
         </section>
 
-        {/* Componente Mercado Pago (Aparece apenas se 'online' for selecionado) */}
-        {paymentMethod === 'online' && (
+        {paymentMethod === 'online' && address && (
           <div className="animate-in fade-in slide-in-from-bottom-4">
             <MercadoPagoPayment 
               publicKey={MP_PUBLIC_KEY} 
@@ -167,7 +219,6 @@ const CheckoutPage = () => {
           </div>
         )}
 
-        {/* Totais */}
         <section className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
           <div className="flex justify-between text-sm font-bold text-slate-500"><span>Subtotal</span><span>R$ {subtotal.toFixed(2)}</span></div>
           <div className="flex justify-between text-sm font-bold text-emerald-600"><span>Taxa de Entrega</span><span>R$ {deliveryFee.toFixed(2)}</span></div>
@@ -178,7 +229,6 @@ const CheckoutPage = () => {
         </section>
       </main>
 
-      {/* Botão de Finalizar (Escondido se for Pagamento Online, pois o MP tem o próprio botão) */}
       {paymentMethod !== 'online' && (
         <div className="fixed bottom-8 left-6 right-6 max-w-2xl mx-auto z-50">
           <Button onClick={() => handlePlaceOrder()} disabled={loading || cart.length === 0} className="w-full h-16 bg-orange-600 hover:bg-orange-700 text-white rounded-[2rem] shadow-2xl font-black uppercase tracking-widest text-[11px] flex gap-3">
@@ -187,6 +237,18 @@ const CheckoutPage = () => {
           </Button>
         </div>
       )}
+
+      <Dialog open={isAddressModalOpen} onOpenChange={setIsAddressModalOpen}>
+        <DialogContent className="max-w-md rounded-[2.5rem] p-8">
+          <DialogHeader><DialogTitle className="text-xl font-black uppercase tracking-tight">Endereço de Entrega</DialogTitle></DialogHeader>
+          <div className="space-y-4 pt-6">
+            <Button onClick={handleGetCurrentLocation} disabled={isLocating} variant="outline" className="w-full h-16 rounded-2xl border-orange-100 bg-orange-50/50 text-orange-600 font-black uppercase text-[10px] tracking-widest gap-3">
+              {isLocating ? <Loader2 className="animate-spin" size={20} /> : <Navigation size={20} />}
+              {isLocating ? "Localizando..." : "Usar minha localização atual"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
