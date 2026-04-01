@@ -12,7 +12,8 @@ import {
   User, Shield, Wallet, History, ShoppingBag, MapPin, 
   ArrowLeft, Plus, MapPinned, ArrowUpCircle, ArrowDownCircle, 
   Trash2, Edit2, CheckCircle2, Ban, Eye, EyeOff, Save,
-  RefreshCw, AlertTriangle, Loader2
+  RefreshCw, AlertTriangle, Loader2, Lock, Unlock, UserCog,
+  ChevronRight, Clock
 } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import {
@@ -335,6 +336,80 @@ const UserDetailsPage = () => {
                 </div>
               )}
 
+              {activeTab === "funcao" && (
+                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600"><Shield size={24} /></div>
+                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Funções & Acessos</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div className="space-y-6">
+                      <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Nível de Acesso Principal</Label>
+                      <Select value={user.role} onValueChange={(val) => setUser({...user, role: val})}>
+                        <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-lg">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl">
+                          <SelectItem value="Cliente" className="font-bold">Cliente</SelectItem>
+                          <SelectItem value="Proprietário" className="font-bold">Proprietário (Lojista)</SelectItem>
+                          <SelectItem value="Gestor Master" className="font-bold">Gestor Master</SelectItem>
+                          <SelectItem value="Parceiro" className="font-bold">Parceiro</SelectItem>
+                          <SelectItem value="Entregador" className="font-bold">Entregador</SelectItem>
+                          <SelectItem value="Garçom" className="font-bold">Garçom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                        O nível de acesso define quais aplicativos e painéis este usuário poderá acessar no ecossistema KIFOME.
+                      </p>
+                    </div>
+
+                    <div className="space-y-6 bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
+                      <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Permissões Específicas</h4>
+                      <div className="space-y-4">
+                        {[
+                          { id: "order", label: "Pode fazer pedidos" },
+                          { id: "coupons", label: "Pode usar cupons" },
+                          { id: "admin_access", label: "Acesso ao Painel Admin" },
+                          { id: "manage_stores", label: "Gerenciar Lojas" },
+                          { id: "manage_users", label: "Gerenciar Usuários" },
+                        ].map((perm) => (
+                          <div key={perm.id} className="flex items-center space-x-3">
+                            <Checkbox 
+                              id={perm.id} 
+                              checked={user.permissions?.includes(perm.id)} 
+                              onCheckedChange={() => togglePermission(perm.id)}
+                            />
+                            <label htmlFor={perm.id} className="text-sm font-bold text-slate-700 cursor-pointer uppercase">{perm.label}</label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-8 border-t border-slate-100">
+                    <div className="flex items-center justify-between p-6 bg-red-50 rounded-[2rem] border border-red-100">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-red-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-200">
+                          <Ban size={24} />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-black text-red-700 uppercase">Status da Conta</h4>
+                          <p className="text-xs font-bold text-red-500 uppercase">Atualmente: {user.status}</p>
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={() => setIsBanModalOpen(true)}
+                        variant="outline" 
+                        className="rounded-xl border-red-200 text-red-600 hover:bg-red-600 hover:text-white font-black uppercase text-[10px]"
+                      >
+                        {user.status === 'Ativo' ? 'Banir Usuário' : 'Reativar Usuário'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {activeTab === "financeiro" && (
                 <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -391,6 +466,49 @@ const UserDetailsPage = () => {
                           )}
                         </div>
                       </ScrollArea>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "pedidos" && (
+                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600"><ShoppingBag size={24} /></div>
+                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Histórico de Pedidos</h3>
+                  </div>
+
+                  <div className="bg-slate-50 rounded-[2.5rem] border border-slate-100 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="bg-slate-100/50">
+                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pedido</th>
+                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Data</th>
+                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {/* Mock de pedidos para visualização */}
+                          <tr className="hover:bg-white transition-colors">
+                            <td className="px-8 py-5 font-black text-slate-900 uppercase text-xs">#1025</td>
+                            <td className="px-8 py-5 text-xs font-bold text-slate-500">12/05/2024</td>
+                            <td className="px-8 py-5">
+                              <Badge className="bg-emerald-100 text-emerald-600 border-none text-[9px] font-black uppercase">Entregue</Badge>
+                            </td>
+                            <td className="px-8 py-5 text-right font-black text-slate-900 text-sm">R$ 45,90</td>
+                          </tr>
+                          <tr className="hover:bg-white transition-colors">
+                            <td className="px-8 py-5 font-black text-slate-900 uppercase text-xs">#0982</td>
+                            <td className="px-8 py-5 text-xs font-bold text-slate-500">10/05/2024</td>
+                            <td className="px-8 py-5">
+                              <Badge className="bg-emerald-100 text-emerald-600 border-none text-[9px] font-black uppercase">Entregue</Badge>
+                            </td>
+                            <td className="px-8 py-5 text-right font-black text-slate-900 text-sm">R$ 120,00</td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </div>
