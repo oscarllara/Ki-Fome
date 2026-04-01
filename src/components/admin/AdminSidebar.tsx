@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const MENU_STRUCTURE = [
-  { title: "Dashboard", icon: <LayoutDashboard size={20} />, href: "/" },
+  { title: "Dashboard", icon: <LayoutDashboard size={20} />, href: "/gestor" },
   { title: "Lojas", icon: <Store size={20} />, href: "/admin/stores" },
   { 
     title: "Itens & Menu", 

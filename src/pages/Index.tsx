@@ -19,19 +19,28 @@ const Index = () => {
 
   useEffect(() => {
     const loadData = () => {
-      const savedOrders = JSON.parse(localStorage.getItem("kifome_orders") || "[]");
-      setOrders(savedOrders.slice(0, 5)); // Pega os 5 mais recentes
-      
-      const revenue = savedOrders.reduce((acc: number, o: any) => {
-        const val = parseFloat(o.total.replace("R$ ", "").replace(",", "."));
-        return acc + (isNaN(val) ? 0 : val);
-      }, 0);
+      try {
+        const rawOrders = localStorage.getItem("kifome_orders");
+        const savedOrders = rawOrders ? JSON.parse(rawOrders) : [];
+        
+        if (Array.isArray(savedOrders)) {
+          setOrders(savedOrders.slice(0, 5));
+          
+          const revenue = savedOrders.reduce((acc: number, o: any) => {
+            if (!o.total) return acc;
+            const val = parseFloat(o.total.replace("R$ ", "").replace(",", "."));
+            return acc + (isNaN(val) ? 0 : val);
+          }, 0);
 
-      setStats(prev => ({
-        ...prev,
-        totalOrders: savedOrders.length,
-        totalRevenue: revenue
-      }));
+          setStats(prev => ({
+            ...prev,
+            totalOrders: savedOrders.length,
+            totalRevenue: revenue
+          }));
+        }
+      } catch (e) {
+        console.error("Erro ao carregar dados do dashboard:", e);
+      }
     };
 
     loadData();
