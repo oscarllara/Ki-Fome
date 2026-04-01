@@ -1,24 +1,22 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { 
-  Plus, Search, Edit2, MapPin, Utensils, Globe, Clock, Loader2, Save, UserCircle, 
-  Phone, Instagram, Facebook, Truck, Navigation, MapPinned, ImageIcon, Star, 
-  DollarSign, Percent, Package, Leaf, Bone, Layers, ExternalLink
+  Plus, Search, Edit2, MapPin, Utensils, Phone, Instagram, Facebook, 
+  Truck, Navigation, ImageIcon, Star, Percent, Leaf, Bone, Layers, 
+  ExternalLink, Save, Loader2
 } from "lucide-react";
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { showSuccess, showError } from "@/utils/toast";
 
@@ -28,7 +26,6 @@ const INITIAL_STORES = [
     name: "LOJA TESTE", 
     description: "Hamburgueria artesanal com foco em qualidade.",
     responsible: "Lojista Teste",
-    ownerId: 234,
     address: "Rua das Flores, 123",
     neighborhood: "Centro",
     reference: "Próximo à Praça Central",
@@ -37,7 +34,6 @@ const INITIAL_STORES = [
     zip: "37200-000",
     lat: "-21.2427000",
     lng: "-45.0013000",
-    phone: "+55 (35) 99999-9999",
     whatsapp: "+55 (35) 99999-9999",
     instagram: "lojateste",
     facebook: "lojateste",
@@ -45,19 +41,18 @@ const INITIAL_STORES = [
     dietType: "ambos",
     rating: "4.8",
     deliveryTime: "30-45",
-    priceForTwo: "60.00",
-    packagingFee: "2.00",
+    priceForTwo: "R$ 0,00",
+    packagingFee: "R$ 0,00",
     deliveryType: "fixed",
-    deliveryFee: "5.00",
+    deliveryFee: "R$ 0,00",
     baseKm: "3",
-    extraKmFee: "1.50",
-    minOrderDelivery: "30.00",
-    minOrderPickup: "0.00",
+    extraKmFee: "R$ 0,00",
+    minOrderDelivery: "R$ 0,00",
+    minOrderPickup: "R$ 0,00",
     commission: "10",
     status: "Ativo", 
     isFeatured: true,
-    img: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400",
-    date: "2023-06-15"
+    img: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400"
   }
 ];
 
@@ -83,20 +78,36 @@ const StoresPage = () => {
   }, []);
 
   const filteredStores = useMemo(() => {
-    return stores.filter(store => {
-      const name = store?.name?.toLowerCase() || "";
-      const responsible = store?.responsible?.toLowerCase() || "";
-      return name.includes(searchQuery.toLowerCase()) || responsible.includes(searchQuery.toLowerCase());
-    });
+    return stores.filter(store => 
+      store?.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      store?.responsible?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
   }, [stores, searchQuery]);
 
-  // Máscaras e Formatações
+  // Formatação de Moeda
+  const formatCurrency = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (!digits) return "R$ 0,00";
+    const amount = (parseInt(digits) / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+    return amount;
+  };
+
+  const handleCurrencyChange = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: formatCurrency(value) });
+  };
+
   const formatWhatsApp = (val: string) => {
-    const digits = val.replace(/\D/g, "").substring(2); // Remove o 55 inicial
+    const digits = val.replace(/\D/g, "");
+    let mainDigits = digits.startsWith("55") ? digits.substring(2) : digits;
+    mainDigits = mainDigits.substring(0, 11);
+    
     let formatted = "+55 ";
-    if (digits.length > 0) formatted += "(" + digits.substring(0, 2);
-    if (digits.length > 2) formatted += ") " + digits.substring(2, 7);
-    if (digits.length > 7) formatted += "-" + digits.substring(7, 11);
+    if (mainDigits.length > 0) formatted += "(" + mainDigits.substring(0, 2);
+    if (mainDigits.length > 2) formatted += ") " + mainDigits.substring(2, 7);
+    if (mainDigits.length > 7) formatted += "-" + mainDigits.substring(7, 11);
     return formatted;
   };
 
@@ -143,7 +154,7 @@ const StoresPage = () => {
           lat: latitude.toFixed(7), 
           lng: longitude.toFixed(7) 
         });
-        showSuccess("GPS capturado com sucesso!");
+        showSuccess("GPS capturado!");
         setIsLocating(false);
       },
       () => { showError("Erro ao obter GPS."); setIsLocating(false); }
@@ -157,7 +168,7 @@ const StoresPage = () => {
       updated = stores.map(s => s.id === editingStore.id ? { ...formData, id: s.id } : s);
       showSuccess("Loja atualizada!");
     } else {
-      const newStore = { ...formData, id: Date.now(), date: new Date().toISOString().split('T')[0] };
+      const newStore = { ...formData, id: Date.now() };
       updated = [newStore, ...stores];
       showSuccess("Nova loja cadastrada!");
     }
@@ -165,6 +176,9 @@ const StoresPage = () => {
     localStorage.setItem("kifome_stores_full", JSON.stringify(updated));
     setIsDialogOpen(false);
   };
+
+  // URL do Mapa sem necessidade de API Key privada para visualização
+  const mapUrl = `https://maps.google.com/maps?q=${formData.lat},${formData.lng}&z=15&output=embed`;
 
   return (
     <AdminLayout>
@@ -195,7 +209,6 @@ const StoresPage = () => {
               <tr className="bg-slate-50/50">
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Loja</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Localização</th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Avaliação</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações</th>
               </tr>
@@ -210,16 +223,7 @@ const StoresPage = () => {
                     </div>
                   </td>
                   <td className="px-8 py-4">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-slate-600">{store.city} - {store.state}</span>
-                      <span className="text-[9px] text-slate-400 font-medium uppercase">{store.neighborhood}</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-4">
-                    <div className="flex items-center gap-1 text-orange-500">
-                      <Star size={14} className="fill-orange-500" />
-                      <span className="text-sm font-black">{store.rating}</span>
-                    </div>
+                    <span className="text-xs font-bold text-slate-600">{store.city} - {store.state}</span>
                   </td>
                   <td className="px-8 py-4">
                     <Badge className={`border-none font-black uppercase text-[9px] ${store.status === 'Ativo' ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'}`}>
@@ -331,14 +335,9 @@ const StoresPage = () => {
                         height="100%" 
                         frameBorder="0" 
                         style={{ border: 0 }}
-                        src={`https://www.google.com/maps/embed/v1/view?key=YOUR_API_KEY&center=${formData.lat},${formData.lng}&zoom=16`}
+                        src={mapUrl}
                         allowFullScreen
                       ></iframe>
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-10 h-10 bg-orange-600 rounded-full flex items-center justify-center text-white shadow-2xl animate-bounce">
-                          <MapPin size={20} />
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </section>
@@ -405,11 +404,11 @@ const StoresPage = () => {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Preço p/ 2 Pessoas</Label>
-                      <Input value={formData.priceForTwo} onChange={(e) => setFormData({...formData, priceForTwo: e.target.value})} className="rounded-xl h-12 font-bold" />
+                      <Input value={formData.priceForTwo} onChange={(e) => handleCurrencyChange('priceForTwo', e.target.value)} className="rounded-xl h-12 font-bold" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Taxa de Embalagem</Label>
-                      <Input value={formData.packagingFee} onChange={(e) => setFormData({...formData, packagingFee: e.target.value})} className="rounded-xl h-12 font-bold" />
+                      <Input value={formData.packagingFee} onChange={(e) => handleCurrencyChange('packagingFee', e.target.value)} className="rounded-xl h-12 font-bold" />
                     </div>
                   </div>
                 </section>
@@ -438,7 +437,7 @@ const StoresPage = () => {
                       <div className="grid grid-cols-2 gap-4 pt-4">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Taxa Padrão (R$)</Label>
-                          <Input value={formData.deliveryFee} onChange={(e) => setFormData({...formData, deliveryFee: e.target.value})} className="rounded-xl h-12 font-bold" />
+                          <Input value={formData.deliveryFee} onChange={(e) => handleCurrencyChange('deliveryFee', e.target.value)} className="rounded-xl h-12 font-bold" />
                         </div>
                         {formData.deliveryType === 'dynamic' && (
                           <>
@@ -448,7 +447,7 @@ const StoresPage = () => {
                             </div>
                             <div className="space-y-2 col-span-2">
                               <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Valor por KM Adicional (R$)</Label>
-                              <Input value={formData.extraKmFee} onChange={(e) => setFormData({...formData, extraKmFee: e.target.value})} className="rounded-xl h-12 font-bold" />
+                              <Input value={formData.extraKmFee} onChange={(e) => handleCurrencyChange('extraKmFee', e.target.value)} className="rounded-xl h-12 font-bold" />
                             </div>
                           </>
                         )}
@@ -459,11 +458,11 @@ const StoresPage = () => {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Pedido Mín. Entrega</Label>
-                          <Input value={formData.minOrderDelivery} onChange={(e) => setFormData({...formData, minOrderDelivery: e.target.value})} className="rounded-xl h-12 font-bold" />
+                          <Input value={formData.minOrderDelivery} onChange={(e) => handleCurrencyChange('minOrderDelivery', e.target.value)} className="rounded-xl h-12 font-bold" />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Pedido Mín. Retirada</Label>
-                          <Input value={formData.minOrderPickup} onChange={(e) => setFormData({...formData, minOrderPickup: e.target.value})} className="rounded-xl h-12 font-bold" />
+                          <Input value={formData.minOrderPickup} onChange={(e) => handleCurrencyChange('minOrderPickup', e.target.value)} className="rounded-xl h-12 font-bold" />
                         </div>
                       </div>
                       <div className="p-6 bg-orange-50 rounded-[2rem] border border-orange-100">
