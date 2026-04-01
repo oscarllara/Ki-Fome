@@ -13,7 +13,7 @@ import {
   ArrowLeft, Plus, MapPinned, ArrowUpCircle, ArrowDownCircle, 
   Trash2, Edit2, CheckCircle2, Ban, Eye, EyeOff, Save,
   RefreshCw, AlertTriangle, Loader2, Lock, Unlock, UserCog,
-  ChevronRight, Clock
+  ChevronRight, Clock, Navigation, Globe
 } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import {
@@ -45,8 +45,9 @@ const UserDetailsPage = () => {
   const [isAddressOpen, setIsAddressOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [addressFormData, setAddressFormData] = useState({ 
-    id: 0, nickname: "", zip: "", street: "", number: "", neighborhood: "", city: "", state: "", complement: ""
+    id: 0, nickname: "", zip: "", street: "", number: "", neighborhood: "", city: "", state: "", complement: "", lat: "", lng: ""
   });
 
   useEffect(() => {
@@ -83,23 +84,11 @@ const UserDetailsPage = () => {
     loadUserData();
   }, [id]);
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUser({ ...user, phone: e.target.value });
-  };
-
-  const saveToLocal = (updatedUser: any) => {
-    try {
-      const savedUsers = localStorage.getItem("kifome_users");
-      const allUsers = savedUsers ? JSON.parse(savedUsers) : [];
-      const updatedUsers = allUsers.map((u: any) => u.id === updatedUser.id ? updatedUser : u);
-      localStorage.setItem("kifome_users", JSON.stringify(updatedUsers));
-    } catch (e) {
-      console.error("Erro ao salvar no localStorage:", e);
-    }
-  };
-
   const handleUpdateUser = () => {
-    saveToLocal(user);
+    const savedUsers = localStorage.getItem("kifome_users");
+    const allUsers = savedUsers ? JSON.parse(savedUsers) : [];
+    const updatedUsers = allUsers.map((u: any) => u.id === user.id ? user : u);
+    localStorage.setItem("kifome_users", JSON.stringify(updatedUsers));
     showSuccess("Perfil atualizado com sucesso!");
   };
 
@@ -107,15 +96,12 @@ const UserDetailsPage = () => {
     const tempPass = "123456";
     const updatedUser = { ...user, password: tempPass };
     setUser(updatedUser);
-    saveToLocal(updatedUser);
     showSuccess(`Senha resetada! Nova senha: ${tempPass}`);
   };
 
   const handleConfirmBan = () => {
     const newStatus = user.status === "Ativo" ? "Banido" : "Ativo";
-    const updatedUser = { ...user, status: newStatus };
-    setUser(updatedUser);
-    saveToLocal(updatedUser);
+    setUser({ ...user, status: newStatus });
     setIsBanModalOpen(false);
     showSuccess(newStatus === "Banido" ? "Usuário banido!" : "Usuário reativado!");
   };
@@ -156,7 +142,6 @@ const UserDetailsPage = () => {
     localStorage.setItem(`kifome_trans_${id}`, JSON.stringify(updatedTrans));
 
     setUser(updatedUser);
-    saveToLocal(updatedUser);
     showSuccess(`Carteira atualizada!`);
     setWalletAmount("R$ 0,00");
     setWalletDescription("");
@@ -198,6 +183,50 @@ const UserDetailsPage = () => {
     }
   };
 
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      showError("Geolocalização não suportada pelo navegador.");
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setAddressFormData(prev => ({
+          ...prev,
+          lat: latitude.toString(),
+          lng: longitude.toString()
+        }));
+        
+        try {
+          // Tenta fazer o reverse geocoding para ajudar o usuário
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await response.json();
+          if (data.address) {
+            setAddressFormData(prev => ({
+              ...prev,
+              street: data.address.road || prev.street,
+              neighborhood: data.address.suburb || data.address.neighbourhood || prev.neighborhood,
+              city: data.address.city || data.address.town || prev.city,
+              state: data.address.state || prev.state,
+              zip: data.address.postcode?.replace("-", "") || prev.zip
+            }));
+          }
+        } catch (e) {
+          console.warn("Não foi possível obter o endereço pelo GPS, mas as coordenadas foram salvas.");
+        }
+
+        showSuccess("Coordenadas GPS capturadas!");
+        setIsLocating(false);
+      },
+      (error) => {
+        showError("Erro ao obter localização. Verifique as permissões.");
+        setIsLocating(false);
+      }
+    );
+  };
+
   const handleSaveAddress = (e: React.FormEvent) => {
     e.preventDefault();
     let updatedAddresses;
@@ -231,18 +260,6 @@ const UserDetailsPage = () => {
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <Loader2 className="animate-spin text-orange-600 mb-4" size={40} />
           <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Carregando perfil...</p>
-        </div>
-      </AdminLayout>
-    );
-  }
-
-  if (!user) {
-    return (
-      <AdminLayout>
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-          <AlertTriangle className="text-red-500 mb-4" size={48} />
-          <h2 className="text-xl font-black text-slate-900 uppercase">Usuário não encontrado</h2>
-          <Button onClick={() => navigate("/admin/users/all")} variant="link" className="text-orange-600 mt-4">Voltar para a lista</Button>
         </div>
       </AdminLayout>
     );
@@ -321,7 +338,7 @@ const UserDetailsPage = () => {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">WhatsApp / Celular</Label>
-                      <Input value={user.phone} onChange={handlePhoneChange} className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-lg" />
+                      <Input value={user.phone} onChange={(e) => setUser({...user, phone: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-lg" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Senha Atual</Label>
@@ -359,9 +376,6 @@ const UserDetailsPage = () => {
                           <SelectItem value="Garçom" className="font-bold">Garçom</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                        O nível de acesso define quais aplicativos e painéis este usuário poderá acessar no ecossistema KIFOME.
-                      </p>
                     </div>
 
                     <div className="space-y-6 bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
@@ -471,49 +485,6 @@ const UserDetailsPage = () => {
                 </div>
               )}
 
-              {activeTab === "pedidos" && (
-                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600"><ShoppingBag size={24} /></div>
-                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Histórico de Pedidos</h3>
-                  </div>
-
-                  <div className="bg-slate-50 rounded-[2.5rem] border border-slate-100 overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left">
-                        <thead>
-                          <tr className="bg-slate-100/50">
-                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pedido</th>
-                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Data</th>
-                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Total</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {/* Mock de pedidos para visualização */}
-                          <tr className="hover:bg-white transition-colors">
-                            <td className="px-8 py-5 font-black text-slate-900 uppercase text-xs">#1025</td>
-                            <td className="px-8 py-5 text-xs font-bold text-slate-500">12/05/2024</td>
-                            <td className="px-8 py-5">
-                              <Badge className="bg-emerald-100 text-emerald-600 border-none text-[9px] font-black uppercase">Entregue</Badge>
-                            </td>
-                            <td className="px-8 py-5 text-right font-black text-slate-900 text-sm">R$ 45,90</td>
-                          </tr>
-                          <tr className="hover:bg-white transition-colors">
-                            <td className="px-8 py-5 font-black text-slate-900 uppercase text-xs">#0982</td>
-                            <td className="px-8 py-5 text-xs font-bold text-slate-500">10/05/2024</td>
-                            <td className="px-8 py-5">
-                              <Badge className="bg-emerald-100 text-emerald-600 border-none text-[9px] font-black uppercase">Entregue</Badge>
-                            </td>
-                            <td className="px-8 py-5 text-right font-black text-slate-900 text-sm">R$ 120,00</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {activeTab === "enderecos" && (
                 <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
                   <div className="flex justify-between items-center">
@@ -523,7 +494,7 @@ const UserDetailsPage = () => {
                     </div>
                     <Button onClick={() => { 
                       setEditingAddress(null); 
-                      setAddressFormData({ id: 0, nickname: "", zip: "", street: "", number: "", neighborhood: "", city: "", state: "", complement: "" }); 
+                      setAddressFormData({ id: 0, nickname: "", zip: "", street: "", number: "", neighborhood: "", city: "", state: "", complement: "", lat: "", lng: "" }); 
                       setIsAddressOpen(true); 
                     }} className="bg-slate-900 text-white rounded-2xl h-12 px-6 font-black uppercase text-[10px]">
                       <Plus size={18} className="mr-2" /> Novo Endereço
@@ -532,12 +503,17 @@ const UserDetailsPage = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {addresses.length > 0 ? addresses.map(addr => (
-                      <div key={addr.id} className="bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100 relative">
+                      <div key={addr.id} className="bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100 relative group">
                         <div className="flex justify-between items-start mb-4">
                           <div>
                             <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">{addr.nickname || "Endereço"}</p>
                             <p className="text-lg font-black text-slate-900 uppercase">{addr.street}, {addr.number}</p>
                             <p className="text-sm font-bold text-slate-500">{addr.neighborhood} • {addr.city}/{addr.state}</p>
+                            {addr.lat && (
+                              <div className="mt-3 flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest bg-white/50 w-fit px-2 py-1 rounded-lg">
+                                <Globe size={10} /> {addr.lat}, {addr.lng}
+                              </div>
+                            )}
                           </div>
                           <div className="flex gap-2">
                             <Button variant="ghost" size="icon" onClick={() => { setEditingAddress(addr); setAddressFormData(addr); setIsAddressOpen(true); }} className="h-10 w-10 bg-white rounded-xl shadow-sm"><Edit2 size={16} /></Button>
@@ -556,9 +532,9 @@ const UserDetailsPage = () => {
         </div>
       </div>
 
-      {/* MODAL DE ENDEREÇO COM API DE CEP */}
+      {/* MODAL DE ENDEREÇO COM API DE CEP E GPS */}
       <Dialog open={isAddressOpen} onOpenChange={setIsAddressOpen}>
-        <DialogContent className="max-w-2xl rounded-[3rem] p-0 overflow-hidden">
+        <DialogContent className="max-w-2xl rounded-[3rem] p-0 overflow-hidden shadow-2xl border-none">
           <form onSubmit={handleSaveAddress}>
             <DialogHeader className="p-10 bg-slate-900 text-white">
               <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-3">
@@ -566,7 +542,18 @@ const UserDetailsPage = () => {
               </DialogTitle>
             </DialogHeader>
             
-            <div className="p-10 space-y-6">
+            <div className="p-10 space-y-6 max-h-[60vh] overflow-y-auto no-scrollbar">
+              <Button 
+                type="button"
+                onClick={handleGetCurrentLocation} 
+                disabled={isLocating} 
+                variant="outline" 
+                className="w-full h-14 rounded-2xl border-orange-100 bg-orange-50/50 text-orange-600 font-black uppercase text-[10px] tracking-widest gap-3 mb-4"
+              >
+                {isLocating ? <Loader2 className="animate-spin" size={20} /> : <Navigation size={20} />}
+                {isLocating ? "Capturando GPS..." : "Usar minha localização atual (GPS)"}
+              </Button>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Apelido (Ex: Casa)</Label>
@@ -596,11 +583,22 @@ const UserDetailsPage = () => {
                   <Input value={addressFormData.neighborhood} onChange={(e) => setAddressFormData({...addressFormData, neighborhood: e.target.value})} className="rounded-2xl h-14 font-bold" required />
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-orange-600 ml-1">Latitude</Label>
+                  <Input value={addressFormData.lat} onChange={(e) => setAddressFormData({...addressFormData, lat: e.target.value})} placeholder="Ex: -23.5505" className="rounded-2xl h-14 font-bold bg-orange-50/30 border-orange-100" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-orange-600 ml-1">Longitude</Label>
+                  <Input value={addressFormData.lng} onChange={(e) => setAddressFormData({...addressFormData, lng: e.target.value})} placeholder="Ex: -46.6333" className="rounded-2xl h-14 font-bold bg-orange-50/30 border-orange-100" />
+                </div>
+              </div>
             </div>
 
             <DialogFooter className="p-10 bg-slate-50 border-t flex gap-4">
               <Button type="button" variant="ghost" onClick={() => setIsAddressOpen(false)} className="rounded-2xl font-bold h-14 flex-1 uppercase text-[10px]">Cancelar</Button>
-              <Button type="submit" className="bg-slate-900 text-white rounded-2xl font-black h-14 flex-1 uppercase text-[10px]">Salvar</Button>
+              <Button type="submit" className="bg-slate-900 text-white rounded-2xl font-black h-14 flex-1 uppercase text-[10px] shadow-xl">Salvar Endereço</Button>
             </DialogFooter>
           </form>
         </DialogContent>
