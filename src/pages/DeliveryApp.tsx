@@ -12,9 +12,6 @@ import RestaurantCard from "@/components/RestaurantCard";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
-} from "@/components/ui/sheet";
 import { showSuccess, showError } from "@/utils/toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -36,9 +33,7 @@ const DeliveryApp = () => {
   const [isLocating, setIsLocating] = useState(false);
   const [addresses, setAddresses] = useState<any[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<any>(null);
-  const [activeOrder, setActiveOrder] = useState<any>(null);
   const [restaurants, setRestaurants] = useState<any[]>([]);
-  const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
     // Carregar Lojas
@@ -56,11 +51,10 @@ const DeliveryApp = () => {
     }
   }, []);
 
-  // Filtro de Lojas por Cidade (Contexto de Localização)
   const filteredRestaurants = useMemo(() => {
     if (!selectedAddress) return restaurants;
     return restaurants.filter(r => 
-      r.city.toLowerCase() === selectedAddress.city?.toLowerCase() || 
+      (r.city && selectedAddress.city && r.city.toLowerCase() === selectedAddress.city.toLowerCase()) || 
       r.status === 'Ativo'
     );
   }, [restaurants, selectedAddress]);
@@ -73,7 +67,7 @@ const DeliveryApp = () => {
         try {
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
           const data = await response.json();
-          const city = data.address.city || data.address.town || "Sua Cidade";
+          const city = data.address.city || data.address.town || data.address.village || "Sua Cidade";
           const newAddr = { 
             id: Date.now(), 
             nickname: "Local Atual", 
@@ -102,7 +96,12 @@ const DeliveryApp = () => {
             <div className="flex items-center gap-1">
               <MapPin className="text-orange-600" size={16} />
               <span className="font-black text-sm text-slate-900">
-                {selectedAddress ? `${selectedAddress.city} • ${selectedAddress.street}` : "Selecione um endereço"}
+                {selectedAddress ? (
+                  <>
+                    {selectedAddress.city && <span>{selectedAddress.city} • </span>}
+                    <span>{selectedAddress.street || "Selecionar endereço"}</span>
+                  </>
+                ) : "Selecione um endereço"}
               </span>
             </div>
           </div>

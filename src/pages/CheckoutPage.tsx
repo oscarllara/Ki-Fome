@@ -35,6 +35,8 @@ const CheckoutPage = () => {
     street: "",
     number: "",
     neighborhood: "",
+    city: "",
+    state: "",
     reference: "",
     nickname: "Minha Casa"
   });
@@ -53,6 +55,8 @@ const CheckoutPage = () => {
             street: current.street || "",
             number: current.number || "",
             neighborhood: current.neighborhood || "",
+            city: current.city || "",
+            state: current.state || "",
             reference: current.reference || "",
             nickname: current.nickname || "Minha Casa"
           });
@@ -78,6 +82,8 @@ const CheckoutPage = () => {
             ...prev,
             street: data.address.road || "",
             neighborhood: data.address.suburb || data.address.neighbourhood || "",
+            city: data.address.city || data.address.town || "",
+            state: data.address.state || "",
           }));
           showSuccess("Localização detectada! Por favor, insira o número.");
         } catch (e) { showError("Erro ao detectar endereço."); }
@@ -92,8 +98,8 @@ const CheckoutPage = () => {
 
   const handleSaveAddress = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!addrForm.street || !addrForm.number || !addrForm.neighborhood) {
-      showError("Preencha os campos obrigatórios (Rua, Número e Bairro).");
+    if (!addrForm.street || !addrForm.number || !addrForm.neighborhood || !addrForm.city) {
+      showError("Preencha os campos obrigatórios (Rua, Número, Bairro e Cidade).");
       return;
     }
 
@@ -144,7 +150,7 @@ const CheckoutPage = () => {
       id: `#${orderId}`,
       customer: "Felipe Denis",
       phone: "(88) 99926-6723",
-      address: `${address.street}, ${address.number} - ${address.neighborhood}`,
+      address: `${address.street}, ${address.number} - ${address.neighborhood}, ${address.city}`,
       reference: address.reference || "",
       items: cart.map(i => `${i.qty}x ${i.name}`),
       total: `R$ ${total.toFixed(2)}`,
@@ -206,6 +212,7 @@ const CheckoutPage = () => {
                 <>
                   <p className="font-black text-slate-900 uppercase text-sm">{address.nickname}</p>
                   <p className="text-xs text-slate-500 font-medium">{address.street}, {address.number} - {address.neighborhood}</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">{address.city} / {address.state}</p>
                   {address.reference && (
                     <p className="text-[10px] text-orange-600 font-bold uppercase mt-1 flex items-center gap-1">
                       <Info size={10} /> Ref: {address.reference}
@@ -327,6 +334,30 @@ const CheckoutPage = () => {
                       onChange={(e) => setAddrForm({...addrForm, neighborhood: e.target.value})} 
                       placeholder="Ex: Centro" 
                       className="rounded-xl h-12 font-bold" 
+                      required 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Cidade</Label>
+                    <Input 
+                      value={addrForm.city} 
+                      onChange={(e) => setAddrForm({...addrForm, city: e.target.value})} 
+                      placeholder="Ex: São Paulo" 
+                      className="rounded-xl h-12 font-bold" 
+                      required 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Estado (UF)</Label>
+                    <Input 
+                      value={addrForm.state} 
+                      onChange={(e) => setAddrForm({...addrForm, state: e.target.value})} 
+                      placeholder="Ex: SP" 
+                      maxLength={2}
+                      className="rounded-xl h-12 font-bold uppercase" 
                       required 
                     />
                   </div>
