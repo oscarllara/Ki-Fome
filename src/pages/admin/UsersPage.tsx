@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Plus, Search, UserPlus, UserCircle, AlertCircle, Loader2
+  Plus, Search, UserPlus, UserCircle, AlertCircle, Loader2, RefreshCw
 } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import {
@@ -36,33 +36,33 @@ const UsersPage = () => {
     name: "", email: "", phone: "+55 ", role: "Cliente"
   });
 
-  useEffect(() => {
-    const loadUsers = () => {
-      setIsLoading(true);
-      try {
-        const savedData = localStorage.getItem("kifome_users");
-        if (savedData) {
-          const parsed = JSON.parse(savedData);
-          // Garantir que o que veio do localStorage é um array
-          if (Array.isArray(parsed)) {
-            setUsers(parsed);
-          } else {
-            // Se não for array, reseta para o padrão
-            setUsers(INITIAL_MOCK_USERS);
-            localStorage.setItem("kifome_users", JSON.stringify(INITIAL_MOCK_USERS));
-          }
+  const loadUsers = () => {
+    setIsLoading(true);
+    try {
+      const savedData = localStorage.getItem("kifome_users");
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        if (Array.isArray(parsed)) {
+          // Filtra apenas objetos válidos para evitar erros de renderização
+          const validUsers = parsed.filter(u => u && typeof u === 'object' && u.id);
+          setUsers(validUsers);
         } else {
           setUsers(INITIAL_MOCK_USERS);
           localStorage.setItem("kifome_users", JSON.stringify(INITIAL_MOCK_USERS));
         }
-      } catch (e) {
-        console.error("Erro ao carregar usuários:", e);
+      } else {
         setUsers(INITIAL_MOCK_USERS);
-      } finally {
-        setIsLoading(false);
+        localStorage.setItem("kifome_users", JSON.stringify(INITIAL_MOCK_USERS));
       }
-    };
+    } catch (e) {
+      console.error("Erro ao carregar usuários:", e);
+      setUsers(INITIAL_MOCK_USERS);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadUsers();
   }, []);
 
@@ -81,11 +81,16 @@ const UsersPage = () => {
   const filteredUsers = useMemo(() => {
     if (!Array.isArray(users)) return [];
     return users.filter(u => {
-      if (!u) return false;
-      const name = u.name?.toLowerCase() || "";
-      const email = u.email?.toLowerCase() || "";
+      if (!u || typeof u !== 'object') return false;
+      
+      // Conversão segura para string para evitar crash se o dado não for texto
+      const name = String(u.name || "").toLowerCase();
+      const email = String(u.email || "").toLowerCase();
+      const role = String(u.role || "");
+      
       const matchesSearch = name.includes(search.toLowerCase()) || email.includes(search.toLowerCase());
-      const matchesRole = !roleFilter || u.role === roleFilter;
+      const matchesRole = !roleFilter || role === roleFilter;
+      
       return matchesSearch && matchesRole;
     });
   }, [users, search, roleFilter]);
@@ -104,6 +109,14 @@ const UsersPage = () => {
     showSuccess("Usuário cadastrado!");
     setIsAddUserOpen(false);
     setFormData({ name: "", email: "", phone: "+55 ", role: "Cliente" });
+  };
+
+  const handleResetData = () => {
+    if (window.confirm("Isso irá resetar a lista de usuários para o padrão. Continuar?")) {
+      localStorage.setItem("kifome_users", JSON.stringify(INITIAL_MOCK_USERS));
+      loadUsers();
+      showSuccess("Dados resetados!");
+    }
   };
 
   if (isLoading) {
@@ -126,9 +139,14 @@ const UsersPage = () => {
           </h1>
           <p className="text-slate-500 font-medium">Gerencie clientes, lojistas e equipe do sistema.</p>
         </div>
-        <Button onClick={() => setIsAddUserOpen(true)} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-12 gap-2">
-          <UserPlus size={18} /> Novo Usuário
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleResetData} className="rounded-xl font-bold h-12 border-slate-200 text-slate-400 hover:text-orange-600">
+            <RefreshCw size={18} />
+          </Button>
+          <Button onClick={() => setIsAddUserOpen(true)} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-12 gap-2">
+            <UserPlus size={18} /> Novo Usuário
+          </Button>
+        </div>
       </header>
 
       <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
@@ -157,11 +175,11 @@ const UsersPage = () => {
             <tbody className="divide-y divide-slate-50">
               {filteredUsers.length > 0 ? filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-slate-50/80 transition-all">
-                  <td className="px-8 py-6 font-black text-slate-900 uppercase text-sm">{user.name}</td>
+                  <td className="px-8 py-6 font-black text-slate-900 uppercase text-sm">{user.name || "Sem Nome"}</td>
                   <td className="px-8 py-6">
-                    <Badge variant="outline" className="rounded-lg text-[9px] font-black uppercase border-orange-200 bg-orange-50 text-orange-600">{user.role}</Badge>
+                    <Badge variant="outline" className="rounded-lg text-[9px] font-black uppercase border-orange-200 bg-orange-50 text-orange-600">{user.role || "Cliente"}</Badge>
                   </td>
-                  <td className="px-8 py-6 text-xs font-bold text-slate-500">{user.phone}</td>
+                  <td className="px-8 py-6 text-xs font-bold text-slate-500">{user.phone || "N/A"}</td>
                   <td className="px-8 py-6 text-right">
                     <Button onClick={() => navigate(`/admin/users/edit/${user.id}`)} className="bg-slate-900 hover:bg-black text-white rounded-xl h-10 px-6 font-black text-[10px] uppercase">Ver Perfil</Button>
                   </td>
