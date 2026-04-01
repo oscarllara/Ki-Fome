@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Plus, Search, UserPlus, UserCircle, AlertCircle
+  Plus, Search, UserPlus, UserCircle, AlertCircle, Loader2
 } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import {
@@ -28,6 +28,7 @@ const UsersPage = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -36,22 +37,36 @@ const UsersPage = () => {
   });
 
   useEffect(() => {
-    try {
-      const savedUsers = localStorage.getItem("kifome_users");
-      if (savedUsers) {
-        const parsed = JSON.parse(savedUsers);
-        setUsers(Array.isArray(parsed) ? parsed : INITIAL_MOCK_USERS);
-      } else {
+    const loadUsers = () => {
+      setIsLoading(true);
+      try {
+        const savedData = localStorage.getItem("kifome_users");
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          // Garantir que o que veio do localStorage é um array
+          if (Array.isArray(parsed)) {
+            setUsers(parsed);
+          } else {
+            // Se não for array, reseta para o padrão
+            setUsers(INITIAL_MOCK_USERS);
+            localStorage.setItem("kifome_users", JSON.stringify(INITIAL_MOCK_USERS));
+          }
+        } else {
+          setUsers(INITIAL_MOCK_USERS);
+          localStorage.setItem("kifome_users", JSON.stringify(INITIAL_MOCK_USERS));
+        }
+      } catch (e) {
+        console.error("Erro ao carregar usuários:", e);
         setUsers(INITIAL_MOCK_USERS);
-        localStorage.setItem("kifome_users", JSON.stringify(INITIAL_MOCK_USERS));
+      } finally {
+        setIsLoading(false);
       }
-    } catch (e) {
-      console.error("Erro ao carregar usuários:", e);
-      setUsers(INITIAL_MOCK_USERS);
-    }
+    };
+
+    loadUsers();
   }, []);
 
-  // Mapeamento de rotas para funções (Lojistas = Proprietários)
+  // Mapeamento de rotas para funções
   const roleFilter = useMemo(() => {
     const path = location.pathname;
     if (path.includes("customers")) return "Cliente";
@@ -66,8 +81,9 @@ const UsersPage = () => {
   const filteredUsers = useMemo(() => {
     if (!Array.isArray(users)) return [];
     return users.filter(u => {
-      const name = u?.name?.toLowerCase() || "";
-      const email = u?.email?.toLowerCase() || "";
+      if (!u) return false;
+      const name = u.name?.toLowerCase() || "";
+      const email = u.email?.toLowerCase() || "";
       const matchesSearch = name.includes(search.toLowerCase()) || email.includes(search.toLowerCase());
       const matchesRole = !roleFilter || u.role === roleFilter;
       return matchesSearch && matchesRole;
@@ -87,7 +103,19 @@ const UsersPage = () => {
     localStorage.setItem("kifome_users", JSON.stringify(updated));
     showSuccess("Usuário cadastrado!");
     setIsAddUserOpen(false);
+    setFormData({ name: "", email: "", phone: "+55 ", role: "Cliente" });
   };
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <Loader2 className="animate-spin text-orange-600 mb-4" size={40} />
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Carregando usuários...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -96,7 +124,7 @@ const UsersPage = () => {
           <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">
             {roleFilter ? `Usuários: ${roleFilter}s` : "Todos os Usuários"}
           </h1>
-          <p className="text-slate-500 font-medium">Gerencie clientes, lojistas e equipe.</p>
+          <p className="text-slate-500 font-medium">Gerencie clientes, lojistas e equipe do sistema.</p>
         </div>
         <Button onClick={() => setIsAddUserOpen(true)} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-12 gap-2">
           <UserPlus size={18} /> Novo Usuário
