@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { 
-  Plus, Search, Edit2, MapPin, Utensils, Globe, Clock, Loader2, Save, UserCircle, Phone, Instagram, Facebook, Truck
+  Plus, Search, Edit2, MapPin, Utensils, Globe, Clock, Loader2, Save, UserCircle, Phone, Instagram, Facebook, Truck, Navigation, MapPinned
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
@@ -58,6 +58,7 @@ const StoresPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingStore, setEditingStore] = useState<any>(null);
   const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   
   const [formData, setFormData] = useState<any>({
     name: "", description: "", responsible: "", ownerId: 234,
@@ -107,6 +108,48 @@ const StoresPage = () => {
       }
     } catch (e) { showError("Erro ao buscar CEP."); }
     finally { setIsLoadingCep(false); }
+  };
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      showError("Geolocalização não suportada.");
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setFormData(prev => ({
+          ...prev,
+          lat: latitude.toString(),
+          lng: longitude.toString()
+        }));
+        
+        try {
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await response.json();
+          if (data.address) {
+            setFormData(prev => ({
+              ...prev,
+              address: data.address.road || prev.address,
+              city: data.address.city || data.address.town || prev.city,
+              state: data.address.state || prev.state,
+              zip: data.address.postcode?.replace("-", "") || prev.zip
+            }));
+          }
+        } catch (e) {
+          console.warn("Não foi possível obter o endereço pelo GPS, mas as coordenadas foram salvas.");
+        }
+
+        showSuccess("Coordenadas GPS capturadas!");
+        setIsLocating(false);
+      },
+      (error) => {
+        showError("Erro ao obter localização.");
+        setIsLocating(false);
+      }
+    );
   };
 
   const handleSaveStore = (e: React.FormEvent) => {
@@ -239,6 +282,18 @@ const StoresPage = () => {
                     <MapPin size={18} className="text-orange-500" />
                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Localização & Geo</h3>
                   </div>
+                  
+                  <Button 
+                    type="button"
+                    onClick={handleGetCurrentLocation} 
+                    disabled={isLocating} 
+                    variant="outline" 
+                    className="w-full h-14 rounded-2xl border-orange-100 bg-orange-50/50 text-orange-600 font-black uppercase text-[10px] tracking-widest gap-3 mb-4"
+                  >
+                    {isLocating ? <Loader2 className="animate-spin" size={20} /> : <Navigation size={20} />}
+                    {isLocating ? "Capturando GPS..." : "Usar localização atual da Loja (GPS)"}
+                  </Button>
+
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">CEP</Label>
@@ -254,6 +309,17 @@ const StoresPage = () => {
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Cidade</Label>
                       <Input value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} className="rounded-xl h-12 font-bold" required />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-orange-600 ml-1">Latitude</Label>
+                      <Input value={formData.lat} onChange={(e) => setFormData({...formData, lat: e.target.value})} placeholder="Ex: -23.5505" className="rounded-xl h-12 font-bold bg-orange-50/30 border-orange-100" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-orange-600 ml-1">Longitude</Label>
+                      <Input value={formData.lng} onChange={(e) => setFormData({...formData, lng: e.target.value})} placeholder="Ex: -46.6333" className="rounded-xl h-12 font-bold bg-orange-50/30 border-orange-100" />
                     </div>
                   </div>
                 </section>
