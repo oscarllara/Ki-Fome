@@ -16,9 +16,6 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -26,8 +23,6 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { showSuccess, showError } from "@/utils/toast";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 
 const INITIAL_STORES = [
   { 
@@ -60,47 +55,16 @@ const INITIAL_STORES = [
     img: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400",
     date: "2023-06-15",
     zone: "Zone: Lavras - MG"
-  },
-  { 
-    id: 3, 
-    name: "Ki + Lanches", 
-    description: "O melhor lanche da região.",
-    responsible: "Helio Junio",
-    ownerId: 229,
-    address: "Av. Central, 500",
-    city: "Lavras",
-    state: "MG",
-    zip: "37200-000",
-    lat: "-21.2488",
-    lng: "-44.9980",
-    phone: "+55 (35) 88888-8888",
-    whatsapp: "+55 (35) 88888-8888",
-    email: "kilanches@kifome.com",
-    category: "Lanches",
-    storeType: "Lanchonete",
-    deliveryMethod: "Moto",
-    atendeDelivery: true,
-    workingDays: "Todos os dias",
-    openTime: "11:00",
-    closeTime: "00:00",
-    status: "Ativo", 
-    isFeatured: false,
-    img: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400",
-    date: "2023-07-06",
-    zone: "Zone: Lavras - MG"
-  },
+  }
 ];
 
 const StoresPage = () => {
-  const navigate = useNavigate();
   const [stores, setStores] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingStore, setEditingStore] = useState<any>(null);
   const [isLoadingCep, setIsLoadingCep] = useState(false);
   
-  // Form State
   const [formData, setFormData] = useState<any>({
     name: "", description: "", responsible: "", ownerId: "",
     address: "", city: "", state: "", zip: "",
@@ -109,44 +73,40 @@ const StoresPage = () => {
     category: "Burgers", storeType: "Hamburgueria", deliveryMethod: "Moto",
     atendeDelivery: true, workingDays: "Segunda a Sábado",
     openTime: "18:00", closeTime: "23:30",
-    status: "Ativo", isFeatured: false, img: ""
+    status: "Ativo", isFeatured: false, img: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400"
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem("kifome_stores_full");
-    if (saved) {
-      setStores(JSON.parse(saved));
-    } else {
+    try {
+      const saved = localStorage.getItem("kifome_stores_full");
+      if (saved) {
+        setStores(JSON.parse(saved));
+      } else {
+        setStores(INITIAL_STORES);
+        localStorage.setItem("kifome_stores_full", JSON.stringify(INITIAL_STORES));
+      }
+    } catch (e) {
       setStores(INITIAL_STORES);
-      localStorage.setItem("kifome_stores_full", JSON.stringify(INITIAL_STORES));
     }
   }, []);
 
   const filteredStores = useMemo(() => {
-    return stores.filter(store => {
-      const matchesSearch = store.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           store.responsible.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           store.city.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = statusFilter === "all" || store.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [stores, searchQuery, statusFilter]);
+    if (!Array.isArray(stores)) return [];
+    return stores.filter(store => 
+      store?.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      store?.responsible?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [stores, searchQuery]);
 
   const handleCepBlur = async () => {
     const cep = formData.zip.replace(/\D/g, "");
     if (cep.length !== 8) return;
-
     setIsLoadingCep(true);
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
       const data = await response.json();
       if (!data.erro) {
-        setFormData({
-          ...formData,
-          address: data.logradouro,
-          city: data.localidade,
-          state: data.uf
-        });
+        setFormData({ ...formData, address: data.logradouro, city: data.localidade, state: data.uf });
         showSuccess("Endereço localizado!");
       }
     } catch (e) { showError("Erro ao buscar CEP."); }
@@ -169,23 +129,6 @@ const StoresPage = () => {
     setIsDialogOpen(false);
   };
 
-  const openEdit = (store: any) => {
-    setEditingStore(store);
-    setFormData(store);
-    setIsDialogOpen(true);
-  };
-
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.text("Relatório de Lojas - KIFOME", 14, 15);
-    autoTable(doc, {
-      head: [['Nome', 'Cidade', 'Responsável', 'Status']],
-      body: filteredStores.map(s => [s.name, s.city, s.responsible, s.status]),
-      startY: 20,
-    });
-    doc.save(`lojas-kifome.pdf`);
-  };
-
   return (
     <AdminLayout>
       <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -193,40 +136,25 @@ const StoresPage = () => {
           <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Gestão de Lojas</h1>
           <p className="text-slate-500 font-medium">Controle total das unidades e seus proprietários.</p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={exportToPDF} variant="outline" className="rounded-xl font-bold h-12 gap-2 border-slate-200">
-            <Download size={18} /> PDF
-          </Button>
-          <Button 
-            onClick={() => { setEditingStore(null); setFormData(INITIAL_STORES[0]); setIsDialogOpen(true); }}
-            className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-black px-6 h-12 uppercase tracking-widest shadow-lg shadow-orange-100"
-          >
-            <Plus size={18} className="mr-2" /> Nova Loja
-          </Button>
-        </div>
+        <Button 
+          onClick={() => { setEditingStore(null); setFormData(INITIAL_STORES[0]); setIsDialogOpen(true); }}
+          className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-black px-6 h-12 uppercase tracking-widest shadow-lg shadow-orange-100"
+        >
+          <Plus size={18} className="mr-2" /> Nova Loja
+        </Button>
       </div>
 
       <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex flex-col md:flex-row gap-4 justify-between items-center">
+        <div className="p-6 border-b border-slate-50 bg-slate-50/30">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <Input 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por nome, cidade ou dono..." 
+              placeholder="Buscar loja ou dono..." 
               className="pl-10 h-12 bg-white rounded-xl border-slate-200 shadow-sm font-medium" 
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px] h-12 rounded-xl bg-white border-slate-200 font-bold uppercase text-[10px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="Ativo">Ativas</SelectItem>
-              <SelectItem value="Inativo">Inativas</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         <div className="overflow-x-auto">
@@ -257,7 +185,7 @@ const StoresPage = () => {
                   </td>
                   <td className="px-8 py-4">
                     <Link 
-                      to={`/admin/users/edit/${store.ownerId}`}
+                      to={`/admin/users/edit/${store.ownerId || 234}`}
                       className="flex items-center gap-2 text-sm font-bold text-orange-600 hover:underline"
                     >
                       <UserCircle size={16} /> {store.responsible}
@@ -269,7 +197,7 @@ const StoresPage = () => {
                     </Badge>
                   </td>
                   <td className="px-8 py-4 text-right">
-                    <Button onClick={() => openEdit(store)} variant="ghost" size="icon" className="rounded-lg h-9 w-9 bg-slate-900 text-white hover:bg-orange-600">
+                    <Button onClick={() => { setEditingStore(store); setFormData(store); setIsDialogOpen(true); }} variant="ghost" size="icon" className="rounded-lg h-9 w-9 bg-slate-900 text-white hover:bg-orange-600">
                       <Edit2 size={14} />
                     </Button>
                   </td>
@@ -287,12 +215,10 @@ const StoresPage = () => {
               <DialogTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
                 <Store className="text-orange-500" /> {editingStore ? "Editar Loja" : "Nova Loja"}
               </DialogTitle>
-              <DialogDescription className="text-slate-400 font-bold text-xs uppercase tracking-widest">Ficha de Cadastro Completa</DialogDescription>
             </DialogHeader>
             
             <ScrollArea className="h-[calc(90vh-180px)] p-10">
               <div className="space-y-12">
-                {/* 🏪 Informações Básicas */}
                 <section className="space-y-6">
                   <div className="flex items-center gap-2 border-b pb-2">
                     <Utensils size={18} className="text-orange-500" />
@@ -314,7 +240,6 @@ const StoresPage = () => {
                   </div>
                 </section>
 
-                {/* 📍 Localização */}
                 <section className="space-y-6">
                   <div className="flex items-center gap-2 border-b pb-2">
                     <MapPin size={18} className="text-orange-500" />
@@ -336,44 +261,13 @@ const StoresPage = () => {
                       <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Cidade</Label>
                       <Input value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} className="rounded-xl h-12 font-bold" required />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Latitude</Label>
-                      <Input value={formData.lat} onChange={(e) => setFormData({...formData, lat: e.target.value})} className="rounded-xl h-12 font-bold" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Longitude</Label>
-                      <Input value={formData.lng} onChange={(e) => setFormData({...formData, lng: e.target.value})} className="rounded-xl h-12 font-bold" />
-                    </div>
                   </div>
                 </section>
 
-                {/* 📞 Contato & Redes */}
-                <section className="space-y-6">
-                  <div className="flex items-center gap-2 border-b pb-2">
-                    <Globe size={18} className="text-orange-500" />
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contato & Redes Sociais</h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">WhatsApp</Label>
-                      <Input value={formData.whatsapp} onChange={(e) => setFormData({...formData, whatsapp: e.target.value})} className="rounded-xl h-12 font-bold" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">E-mail</Label>
-                      <Input value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="rounded-xl h-12 font-bold" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Instagram</Label>
-                      <Input value={formData.instagram} onChange={(e) => setFormData({...formData, instagram: e.target.value})} className="rounded-xl h-12 font-bold" />
-                    </div>
-                  </div>
-                </section>
-
-                {/* ⏰ Horário & Config */}
                 <section className="space-y-6">
                   <div className="flex items-center gap-2 border-b pb-2">
                     <Clock size={18} className="text-orange-500" />
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Funcionamento & Configurações</h3>
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Funcionamento</h3>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
@@ -387,20 +281,6 @@ const StoresPage = () => {
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Fechamento</Label>
                       <Input type="time" value={formData.closeTime} onChange={(e) => setFormData({...formData, closeTime: e.target.value})} className="rounded-xl h-12 font-bold" />
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-6 p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                    <div className="flex items-center gap-3">
-                      <Switch checked={formData.status === 'Ativo'} onCheckedChange={(val) => setFormData({...formData, status: val ? 'Ativo' : 'Inativo'})} />
-                      <Label className="text-[10px] font-black uppercase text-slate-700">Loja Ativa</Label>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Switch checked={formData.isFeatured} onCheckedChange={(val) => setFormData({...formData, isFeatured: val})} />
-                      <Label className="text-[10px] font-black uppercase text-slate-700">Destaque no App</Label>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Switch checked={formData.atendeDelivery} onCheckedChange={(val) => setFormData({...formData, atendeDelivery: val})} />
-                      <Label className="text-[10px] font-black uppercase text-slate-700">Atende Delivery</Label>
                     </div>
                   </div>
                 </section>

@@ -386,10 +386,11 @@ const UserDetailsPage = () => {
                           </SelectTrigger>
                           <SelectContent className="rounded-2xl">
                             <SelectItem value="Cliente" className="font-black uppercase text-[10px]">Cliente (Padrão)</SelectItem>
+                            <SelectItem value="Proprietário" className="font-black uppercase text-[10px]">Proprietário de Loja</SelectItem>
+                            <SelectItem value="Gestor Master" className="font-black uppercase text-[10px]">Gestor Master (Dono)</SelectItem>
                             <SelectItem value="Parceiro" className="font-black uppercase text-[10px]">Parceiro Comercial</SelectItem>
-                            <SelectItem value="Proprietário" className="font-black uppercase text-[10px]">Dono de Loja</SelectItem>
                             <SelectItem value="Entregador" className="font-black uppercase text-[10px]">Entregador</SelectItem>
-                            <SelectItem value="Funcionário" className="font-black uppercase text-[10px]">Equipe Interna</SelectItem>
+                            <SelectItem value="Garçom" className="font-black uppercase text-[10px]">Garçom</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

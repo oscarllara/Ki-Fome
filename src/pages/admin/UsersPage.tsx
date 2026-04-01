@@ -1,48 +1,37 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Plus, Search, UserPlus, Trash2, Download, UserCheck, 
-  Mail, Phone, User as UserIcon, FileText, Lock, Wallet, Shield
+  Plus, Search, UserPlus, UserCircle
 } from "lucide-react";
-import { showSuccess, showError } from "@/utils/toast";
+import { showSuccess } from "@/utils/toast";
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 
 const INITIAL_MOCK_USERS = [
   { id: 234, name: "Lojista Teste", email: "lojista@teste.com", phone: "+55 (35) 99999-9999", role: "Proprietário", wallet: 0, status: "Ativo" },
-  { id: 233, name: "Felipe Denis", email: "felipeacompanhamento@gmail.com", phone: "+55 (88) 99926-6723", role: "Cliente", wallet: 0, status: "Ativo" },
-  { id: 232, name: "ITALO AMORIM BARBOZA", email: "ytalloamorim49@gmail.com", phone: "+55 (41) 99694-6230", role: "Entregador", wallet: 0, status: "Ativo" },
-  { id: 229, name: "Helio Junio", email: "helio@kifome.com", phone: "+55 (35) 88888-8888", role: "Proprietário", wallet: 1200, status: "Ativo" },
+  { id: 233, name: "Felipe Denis", email: "felipe@gmail.com", phone: "+55 (88) 99926-6723", role: "Cliente", wallet: 0, status: "Ativo" },
+  { id: 232, name: "ITALO AMORIM", email: "ytallo@gmail.com", phone: "+55 (41) 99694-6230", role: "Entregador", wallet: 0, status: "Ativo" },
+  { id: 229, name: "Helio Junio", email: "helio@kifome.com", phone: "+55 (35) 88888-8888", role: "Gestor Master", wallet: 1200, status: "Ativo" },
 ];
 
 const UsersPage = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<any>(null);
-  const [adminPass, setAdminPass] = useState("");
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [formData, setFormData] = useState({
-    name: "", email: "", phone: "+55 ", password: "", role: "Cliente", initialWallet: "R$ 0,00", walletDescription: ""
+    name: "", email: "", phone: "+55 ", role: "Cliente"
   });
 
   useEffect(() => {
@@ -56,22 +45,17 @@ const UsersPage = () => {
   }, []);
 
   const filteredUsers = useMemo(() => {
-    return users.filter(u => {
-      const matchesSearch = u.name.toLowerCase().includes(search.toLowerCase()) || 
-                           u.email.toLowerCase().includes(search.toLowerCase()) ||
-                           u.phone.includes(search);
-      return matchesSearch;
-    });
+    return users.filter(u => 
+      u.name.toLowerCase().includes(search.toLowerCase()) || 
+      u.email.toLowerCase().includes(search.toLowerCase())
+    );
   }, [users, search]);
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
     const newUser = {
       id: Date.now(),
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      role: formData.role,
+      ...formData,
       wallet: 0,
       status: "Ativo"
     };
@@ -87,7 +71,7 @@ const UsersPage = () => {
       <header className="mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Usuários do Sistema</h1>
-          <p className="text-slate-500 font-medium">Gerencie clientes, lojistas e entregadores.</p>
+          <p className="text-slate-500 font-medium">Gerencie clientes, lojistas e equipe.</p>
         </div>
         <Button onClick={() => setIsAddUserOpen(true)} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-12 gap-2">
           <UserPlus size={18} /> Novo Usuário
@@ -147,7 +131,10 @@ const UsersPage = () => {
                 <SelectContent>
                   <SelectItem value="Cliente">Cliente</SelectItem>
                   <SelectItem value="Proprietário">Proprietário</SelectItem>
+                  <SelectItem value="Gestor Master">Gestor Master</SelectItem>
+                  <SelectItem value="Parceiro">Parceiro</SelectItem>
                   <SelectItem value="Entregador">Entregador</SelectItem>
+                  <SelectItem value="Garçom">Garçom</SelectItem>
                 </SelectContent>
               </Select>
             </div>
