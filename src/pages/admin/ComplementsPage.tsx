@@ -5,12 +5,11 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { 
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
 } from "@/components/ui/select";
 import { 
-  Plus, Trash2, ListTree, Settings2, Search, Edit2
+  Plus, Trash2, Settings2, Search, Edit2
 } from "lucide-react";
 import { showSuccess } from "@/utils/toast";
 
@@ -39,6 +38,20 @@ const ComplementsPage = () => {
     }
   }, []);
 
+  const formatCurrency = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (!digits) return "R$ 0,00";
+    const amount = (parseInt(digits) / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+    return amount;
+  };
+
+  const handlePriceChange = (id: number, value: string) => {
+    setCatItems(catItems.map(i => i.id === id ? { ...i, price: formatCurrency(value) } : i));
+  };
+
   const saveToStorage = (updated: any[]) => {
     setCategories(updated);
     localStorage.setItem("kifome_complements", JSON.stringify(updated));
@@ -58,7 +71,6 @@ const ComplementsPage = () => {
 
   const handleSave = () => {
     if (!catName) return;
-
     let updated;
     if (editingId) {
       updated = categories.map(c => 
@@ -79,7 +91,6 @@ const ComplementsPage = () => {
       updated = [newCategory, ...categories];
       showSuccess("Novo complemento criado!");
     }
-
     saveToStorage(updated);
     resetForm();
   };
@@ -148,7 +159,7 @@ const ComplementsPage = () => {
                 {catItems.map((item) => (
                   <div key={item.id} className="flex gap-3 items-center">
                     <Input placeholder="Nome da opção" className="rounded-xl h-12 flex-[3] font-bold" value={item.name} onChange={(e) => setCatItems(catItems.map(i => i.id === item.id ? { ...i, name: e.target.value } : i))} />
-                    <Input className="rounded-xl h-12 flex-1 font-black text-center" value={item.price} onChange={(e) => setCatItems(catItems.map(i => i.id === item.id ? { ...i, price: e.target.value } : i))} />
+                    <Input className="rounded-xl h-12 flex-1 font-black text-center" value={item.price} onChange={(e) => handlePriceChange(item.id, e.target.value)} />
                     <Button variant="ghost" size="icon" onClick={() => setCatItems(catItems.filter(i => i.id !== item.id))} className="text-red-500"><Trash2 size={18} /></Button>
                   </div>
                 ))}
@@ -162,7 +173,7 @@ const ComplementsPage = () => {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
+        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-slate-50 bg-slate-50/30">
             <div className="relative w-full md:w-96">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />

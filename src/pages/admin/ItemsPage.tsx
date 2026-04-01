@@ -33,7 +33,7 @@ const ItemsPage = () => {
   // Estados do Formulário
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("");
+  const [price, setPrice] = useState("R$ 0,00");
   const [category, setCategory] = useState("");
   const [linkedComplements, setLinkedComplements] = useState<number[]>([]);
   const [promoType, setPromoType] = useState<"fixed" | "percent">("fixed");
@@ -42,7 +42,6 @@ const ItemsPage = () => {
   const [features, setFeatures] = useState({ recommended: false, popular: false, gourmet: false });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // Carregar dados vinculados
   useEffect(() => {
     const savedItems = localStorage.getItem("kifome_items");
     if (savedItems) setItems(JSON.parse(savedItems));
@@ -53,6 +52,16 @@ const ItemsPage = () => {
     const savedComps = localStorage.getItem("kifome_complements");
     if (savedComps) setComplements(JSON.parse(savedComps));
   }, []);
+
+  const formatCurrency = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (!digits) return "R$ 0,00";
+    const amount = (parseInt(digits) / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+    return amount;
+  };
 
   const saveItems = (updated: any[]) => {
     setItems(updated);
@@ -67,7 +76,7 @@ const ItemsPage = () => {
     setEditingItem(item);
     setName(item.name);
     setDescription(item.description || "");
-    setPrice(item.price);
+    setPrice(item.price || "R$ 0,00");
     setCategory(item.category);
     setLinkedComplements(item.complements || []);
     setFeatures({ 
@@ -87,7 +96,7 @@ const ItemsPage = () => {
     const updatedData = {
       name: name.toUpperCase(),
       description,
-      price: price.replace(",", "."),
+      price,
       category,
       complements: linkedComplements,
       isRecommended: features.recommended,
@@ -177,7 +186,7 @@ const ItemsPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Preço (R$)</Label>
-                    <Input value={price} onChange={(e) => setPrice(e.target.value)} className="rounded-2xl h-14 font-black text-xl" required />
+                    <Input value={price} onChange={(e) => setPrice(formatCurrency(e.target.value))} className="rounded-2xl h-14 font-black text-xl" required />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Categoria</Label>
@@ -193,6 +202,41 @@ const ItemsPage = () => {
                     </Select>
                   </div>
                 </div>
+
+                {/* SEÇÃO DE PROMOÇÃO RESTAURADA */}
+                <section className="bg-orange-50/50 p-10 rounded-[3rem] border border-orange-100 space-y-8">
+                  <div className="flex items-center gap-3">
+                    <Flame className="text-orange-600" size={24} />
+                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Configurar Promoção</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Tipo de Desconto</Label>
+                      <RadioGroup value={promoType} onValueChange={(val: any) => setPromoType(val)} className="flex gap-4">
+                        <div className={`flex items-center gap-2 p-3 rounded-xl border transition-all cursor-pointer ${promoType === 'fixed' ? 'bg-white border-orange-500 shadow-md' : 'border-slate-200'}`}>
+                          <RadioGroupItem value="fixed" id="p-fixed" />
+                          <Label htmlFor="p-fixed" className="text-[10px] font-black uppercase cursor-pointer">Valor Fixo (R$)</Label>
+                        </div>
+                        <div className={`flex items-center gap-2 p-3 rounded-xl border transition-all cursor-pointer ${promoType === 'percent' ? 'bg-white border-orange-500 shadow-md' : 'border-slate-200'}`}>
+                          <RadioGroupItem value="percent" id="p-perc" />
+                          <Label htmlFor="p-perc" className="text-[10px] font-black uppercase cursor-pointer">Porcentagem (%)</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Valor do Desconto</Label>
+                      <div className="relative">
+                        <Input 
+                          value={promoValue} 
+                          onChange={(e) => setPromoValue(promoType === 'fixed' ? formatCurrency(e.target.value) : e.target.value)} 
+                          className="rounded-2xl h-14 font-black text-xl pl-4" 
+                          placeholder={promoType === 'fixed' ? "R$ 0,00" : "0%"}
+                        />
+                        <div className="absolute right-4 top-4 text-orange-600"><Percent size={20} /></div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
               </div>
 
               <div className="space-y-8">
@@ -268,7 +312,7 @@ const ItemsPage = () => {
                   </td>
                   <td className="px-8 py-5 font-black text-slate-900 uppercase text-sm">{item.name}</td>
                   <td className="px-8 py-5"><Badge variant="outline" className="text-[8px] font-black uppercase">{item.category}</Badge></td>
-                  <td className="px-8 py-5 font-black text-slate-900">R$ {parseFloat(item.price).toFixed(2)}</td>
+                  <td className="px-8 py-5 font-black text-slate-900">{item.price}</td>
                   <td className="px-8 py-5 text-right">
                     <div className="flex justify-end gap-2">
                       <Button onClick={() => handleEdit(item)} variant="ghost" size="icon" className="h-12 w-12 bg-slate-900 text-white rounded-2xl"><Edit2 size={18} /></Button>
