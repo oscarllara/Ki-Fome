@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
-import { ShieldCheck, Bell, Search } from "lucide-react";
+import { ShieldCheck, Bell, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AdminLayoutProps {
@@ -12,13 +12,32 @@ interface AdminLayoutProps {
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const navigate = useNavigate();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
-    const auth = localStorage.getItem("admin_auth");
-    if (!auth) {
+    try {
+      const auth = localStorage.getItem("admin_auth");
+      if (!auth) {
+        navigate("/login");
+      } else {
+        setIsCheckingAuth(false);
+      }
+    } catch (e) {
+      console.error("Erro ao verificar autenticação:", e);
       navigate("/login");
     }
   }, [navigate]);
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center space-y-4">
+          <Loader2 className="animate-spin text-orange-600 mx-auto" size={40} />
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Verificando Acesso...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans flex flex-col md:flex-row">
