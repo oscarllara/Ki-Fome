@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Plus, Search, UserPlus, UserCircle
+  Plus, Search, UserPlus, UserCircle, AlertCircle
 } from "lucide-react";
-import { showSuccess } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -36,16 +36,22 @@ const UsersPage = () => {
   });
 
   useEffect(() => {
-    const savedUsers = localStorage.getItem("kifome_users");
-    if (savedUsers) {
-      setUsers(JSON.parse(savedUsers));
-    } else {
+    try {
+      const savedUsers = localStorage.getItem("kifome_users");
+      if (savedUsers) {
+        const parsed = JSON.parse(savedUsers);
+        setUsers(Array.isArray(parsed) ? parsed : INITIAL_MOCK_USERS);
+      } else {
+        setUsers(INITIAL_MOCK_USERS);
+        localStorage.setItem("kifome_users", JSON.stringify(INITIAL_MOCK_USERS));
+      }
+    } catch (e) {
+      console.error("Erro ao carregar usuários:", e);
       setUsers(INITIAL_MOCK_USERS);
-      localStorage.setItem("kifome_users", JSON.stringify(INITIAL_MOCK_USERS));
     }
   }, []);
 
-  // Mapeamento de rotas para funções
+  // Mapeamento de rotas para funções (Lojistas = Proprietários)
   const roleFilter = useMemo(() => {
     const path = location.pathname;
     if (path.includes("customers")) return "Cliente";
@@ -58,9 +64,11 @@ const UsersPage = () => {
   }, [location.pathname]);
 
   const filteredUsers = useMemo(() => {
+    if (!Array.isArray(users)) return [];
     return users.filter(u => {
-      const matchesSearch = u.name.toLowerCase().includes(search.toLowerCase()) || 
-                           u.email.toLowerCase().includes(search.toLowerCase());
+      const name = u?.name?.toLowerCase() || "";
+      const email = u?.email?.toLowerCase() || "";
+      const matchesSearch = name.includes(search.toLowerCase()) || email.includes(search.toLowerCase());
       const matchesRole = !roleFilter || u.role === roleFilter;
       return matchesSearch && matchesRole;
     });
@@ -83,7 +91,7 @@ const UsersPage = () => {
 
   return (
     <AdminLayout>
-      <header className="mb-8 flex justify-between items-center">
+      <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">
             {roleFilter ? `Usuários: ${roleFilter}s` : "Todos os Usuários"}
@@ -100,7 +108,7 @@ const UsersPage = () => {
           <div className="relative w-full md:w-96">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <Input 
-              placeholder="Pesquisar..." 
+              placeholder="Pesquisar por nome ou e-mail..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-12 h-14 bg-white rounded-2xl border-slate-200 font-bold"
@@ -132,7 +140,12 @@ const UsersPage = () => {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={4} className="px-8 py-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest">Nenhum usuário encontrado nesta categoria</td>
+                  <td colSpan={4} className="px-8 py-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest">
+                    <div className="flex flex-col items-center gap-2">
+                      <AlertCircle size={32} className="opacity-20" />
+                      <span>Nenhum usuário encontrado</span>
+                    </div>
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -145,21 +158,30 @@ const UsersPage = () => {
           <form onSubmit={handleCreateUser}>
             <DialogHeader><DialogTitle className="text-xl font-black uppercase">Novo Usuário</DialogTitle></DialogHeader>
             <div className="space-y-4 py-6">
-              <Input placeholder="Nome" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
-              <Input placeholder="E-mail" type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} required />
-              <Select value={formData.role} onValueChange={(val) => setFormData({...formData, role: val})}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Cliente">Cliente</SelectItem>
-                  <SelectItem value="Proprietário">Proprietário</SelectItem>
-                  <SelectItem value="Gestor Master">Gestor Master</SelectItem>
-                  <SelectItem value="Parceiro">Parceiro</SelectItem>
-                  <SelectItem value="Entregador">Entregador</SelectItem>
-                  <SelectItem value="Garçom">Garçom</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Nome</Label>
+                <Input placeholder="Nome completo" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">E-mail</Label>
+                <Input placeholder="E-mail de acesso" type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Nível de Acesso</Label>
+                <Select value={formData.role} onValueChange={(val) => setFormData({...formData, role: val})}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cliente">Cliente</SelectItem>
+                    <SelectItem value="Proprietário">Proprietário (Lojista)</SelectItem>
+                    <SelectItem value="Gestor Master">Gestor Master</SelectItem>
+                    <SelectItem value="Parceiro">Parceiro</SelectItem>
+                    <SelectItem value="Entregador">Entregador</SelectItem>
+                    <SelectItem value="Garçom">Garçom</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <DialogFooter><Button type="submit" className="w-full bg-orange-600">Cadastrar</Button></DialogFooter>
+            <DialogFooter><Button type="submit" className="w-full bg-orange-600 h-12 font-black uppercase text-[10px]">Cadastrar Usuário</Button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

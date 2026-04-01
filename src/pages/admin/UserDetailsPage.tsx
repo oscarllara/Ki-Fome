@@ -52,6 +52,7 @@ const UserDetailsPage = () => {
 
   useEffect(() => {
     const loadUserData = () => {
+      if (!id) return;
       setLoading(true);
       try {
         const savedUsers = localStorage.getItem("kifome_users");
@@ -75,7 +76,6 @@ const UserDetailsPage = () => {
         }
       } catch (e) {
         console.error("Erro ao carregar usuário:", e);
-        showError("Erro ao carregar dados do usuário.");
       } finally {
         setLoading(false);
       }
@@ -85,17 +85,18 @@ const UserDetailsPage = () => {
   }, [id]);
 
   const handleUpdateUser = () => {
-    const savedUsers = localStorage.getItem("kifome_users");
-    const allUsers = savedUsers ? JSON.parse(savedUsers) : [];
-    const updatedUsers = allUsers.map((u: any) => u.id === user.id ? user : u);
-    localStorage.setItem("kifome_users", JSON.stringify(updatedUsers));
-    showSuccess("Perfil atualizado com sucesso!");
+    try {
+      const savedUsers = localStorage.getItem("kifome_users");
+      const allUsers = savedUsers ? JSON.parse(savedUsers) : [];
+      const updatedUsers = allUsers.map((u: any) => u.id === user.id ? user : u);
+      localStorage.setItem("kifome_users", JSON.stringify(updatedUsers));
+      showSuccess("Perfil atualizado com sucesso!");
+    } catch (e) { showError("Erro ao salvar alterações."); }
   };
 
   const handleResetPassword = () => {
     const tempPass = "123456";
-    const updatedUser = { ...user, password: tempPass };
-    setUser(updatedUser);
+    setUser({ ...user, password: tempPass });
     showSuccess(`Senha resetada! Nova senha: ${tempPass}`);
   };
 
@@ -185,7 +186,7 @@ const UserDetailsPage = () => {
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
-      showError("Geolocalização não suportada pelo navegador.");
+      showError("Geolocalização não suportada.");
       return;
     }
 
@@ -200,7 +201,6 @@ const UserDetailsPage = () => {
         }));
         
         try {
-          // Tenta fazer o reverse geocoding para ajudar o usuário
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
           const data = await response.json();
           if (data.address) {
@@ -213,17 +213,12 @@ const UserDetailsPage = () => {
               zip: data.address.postcode?.replace("-", "") || prev.zip
             }));
           }
-        } catch (e) {
-          console.warn("Não foi possível obter o endereço pelo GPS, mas as coordenadas foram salvas.");
-        }
+        } catch (e) {}
 
-        showSuccess("Coordenadas GPS capturadas!");
+        showSuccess("GPS capturado!");
         setIsLocating(false);
       },
-      (error) => {
-        showError("Erro ao obter localização. Verifique as permissões.");
-        setIsLocating(false);
-      }
+      () => { showError("Erro ao obter localização."); setIsLocating(false); }
     );
   };
 
@@ -260,6 +255,18 @@ const UserDetailsPage = () => {
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <Loader2 className="animate-spin text-orange-600 mb-4" size={40} />
           <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Carregando perfil...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <AdminLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+          <AlertTriangle className="text-red-500 mb-4" size={48} />
+          <h2 className="text-xl font-black text-slate-900 uppercase">Usuário não encontrado</h2>
+          <Button onClick={() => navigate("/admin/users/all")} variant="link" className="text-orange-600 mt-4">Voltar para a lista</Button>
         </div>
       </AdminLayout>
     );
