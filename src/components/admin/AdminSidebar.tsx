@@ -5,7 +5,7 @@ import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, Store, UtensilsCrossed, Users, 
   FileText, Megaphone, Wallet, Settings, ChevronDown, 
-  ChevronRight, LogOut, LayoutList
+  ChevronRight, LogOut, LayoutList, UserCog
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,11 @@ const MENU_STRUCTURE = [
     subItems: [
       { title: "Todos", href: "/admin/users/all" },
       { title: "Clientes", href: "/admin/users/customers" },
+      { title: "Proprietários", href: "/admin/users/owners" },
+      { title: "Gestor Master", href: "/admin/users/masters" },
+      { title: "Parceiros", href: "/admin/users/partners" },
       { title: "Entregadores", href: "/admin/users/drivers" },
+      { title: "Garçons", href: "/admin/users/staff" },
     ]
   },
   { 
@@ -47,6 +51,7 @@ const MENU_STRUCTURE = [
     subItems: [
       { title: "Slides", href: "/admin/promos/slides" },
       { title: "Cupons", href: "/admin/promos/coupons" },
+      { title: "Notificações Push", href: "/admin/promos/push" },
     ]
   },
   { 
@@ -61,7 +66,7 @@ const MENU_STRUCTURE = [
 
 const AdminSidebar = () => {
   const location = useLocation();
-  const [openMenus, setOpenMenus] = useState<string[]>([]);
+  const [openMenus, setOpenMenus] = useState<string[]>(["Usuários", "Lojas"]);
 
   const toggleMenu = (title: string) => {
     setOpenMenus(prev => 

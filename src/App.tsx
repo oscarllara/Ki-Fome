@@ -69,13 +69,17 @@ const App = () => (
           <Route path="/admin/menu/menu-categories" element={<MenuCategoriesPage />} />
           <Route path="/admin/menu/complements" element={<ComplementsPage />} />
           <Route path="/admin/menu/items" element={<ItemsPage />} />
+          
+          {/* Rotas de Usuários */}
           <Route path="/admin/users/all" element={<UsersPage />} />
           <Route path="/admin/users/customers" element={<UsersPage />} />
           <Route path="/admin/users/owners" element={<UsersPage />} />
+          <Route path="/admin/users/masters" element={<UsersPage />} />
+          <Route path="/admin/users/partners" element={<UsersPage />} />
           <Route path="/admin/users/drivers" element={<UsersPage />} />
           <Route path="/admin/users/staff" element={<UsersPage />} />
-          <Route path="/admin/users/partners" element={<UsersPage />} />
           <Route path="/admin/users/edit/:id" element={<UserDetailsPage />} />
+          
           <Route path="/admin/orders/list" element={<OrdersListPage />} />
           <Route path="/admin/orders/live" element={<LiveOrdersPage />} />
           <Route path="/admin/orders/manager" element={<OrderManagerPage />} />

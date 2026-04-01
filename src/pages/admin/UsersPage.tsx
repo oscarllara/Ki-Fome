@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ const UsersPage = () => {
   const [search, setSearch] = useState("");
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "+55 ", role: "Cliente"
@@ -44,12 +45,26 @@ const UsersPage = () => {
     }
   }, []);
 
+  // Mapeamento de rotas para funções
+  const roleFilter = useMemo(() => {
+    const path = location.pathname;
+    if (path.includes("customers")) return "Cliente";
+    if (path.includes("owners")) return "Proprietário";
+    if (path.includes("masters")) return "Gestor Master";
+    if (path.includes("partners")) return "Parceiro";
+    if (path.includes("drivers")) return "Entregador";
+    if (path.includes("staff")) return "Garçom";
+    return null;
+  }, [location.pathname]);
+
   const filteredUsers = useMemo(() => {
-    return users.filter(u => 
-      u.name.toLowerCase().includes(search.toLowerCase()) || 
-      u.email.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [users, search]);
+    return users.filter(u => {
+      const matchesSearch = u.name.toLowerCase().includes(search.toLowerCase()) || 
+                           u.email.toLowerCase().includes(search.toLowerCase());
+      const matchesRole = !roleFilter || u.role === roleFilter;
+      return matchesSearch && matchesRole;
+    });
+  }, [users, search, roleFilter]);
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +85,9 @@ const UsersPage = () => {
     <AdminLayout>
       <header className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Usuários do Sistema</h1>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">
+            {roleFilter ? `Usuários: ${roleFilter}s` : "Todos os Usuários"}
+          </h1>
           <p className="text-slate-500 font-medium">Gerencie clientes, lojistas e equipe.</p>
         </div>
         <Button onClick={() => setIsAddUserOpen(true)} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-12 gap-2">
@@ -102,7 +119,7 @@ const UsersPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredUsers.map((user) => (
+              {filteredUsers.length > 0 ? filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-slate-50/80 transition-all">
                   <td className="px-8 py-6 font-black text-slate-900 uppercase text-sm">{user.name}</td>
                   <td className="px-8 py-6">
@@ -113,7 +130,11 @@ const UsersPage = () => {
                     <Button onClick={() => navigate(`/admin/users/edit/${user.id}`)} className="bg-slate-900 hover:bg-black text-white rounded-xl h-10 px-6 font-black text-[10px] uppercase">Ver Perfil</Button>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={4} className="px-8 py-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest">Nenhum usuário encontrado nesta categoria</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

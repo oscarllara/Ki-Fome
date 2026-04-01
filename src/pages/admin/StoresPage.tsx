@@ -8,19 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { 
-  Plus, Search, Filter, Download, Edit2, MapPin, 
-  Image as ImageIcon, Percent, Truck, Wallet, Utensils,
-  Eye, FileText, UserCircle, Globe, Instagram, Facebook,
-  Clock, Navigation, ShieldCheck, Loader2, Save, X
+  Plus, Search, Edit2, MapPin, Utensils, Globe, Clock, Loader2, Save, UserCircle
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { showSuccess, showError } from "@/utils/toast";
 
@@ -53,8 +47,7 @@ const INITIAL_STORES = [
     status: "Ativo", 
     isFeatured: true,
     img: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400",
-    date: "2023-06-15",
-    zone: "Zone: Lavras - MG"
+    date: "2023-06-15"
   }
 ];
 
@@ -80,7 +73,8 @@ const StoresPage = () => {
     try {
       const saved = localStorage.getItem("kifome_stores_full");
       if (saved) {
-        setStores(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setStores(Array.isArray(parsed) ? parsed : INITIAL_STORES);
       } else {
         setStores(INITIAL_STORES);
         localStorage.setItem("kifome_stores_full", JSON.stringify(INITIAL_STORES));
