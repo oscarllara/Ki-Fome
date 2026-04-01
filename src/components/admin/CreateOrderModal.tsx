@@ -18,17 +18,42 @@ interface CreateOrderModalProps {
 
 const CreateOrderModal = ({ open, onOpenChange }: CreateOrderModalProps) => {
   const [loading, setLoading] = useState(false);
-  const [pickupType, setPickupType] = useState<"store" | "gps">("store");
+  const [phone, setPhone] = useState("+55 ");
+
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    let mainDigits = digits;
+    if (digits.startsWith("55")) {
+      mainDigits = digits.substring(2);
+    }
+    mainDigits = mainDigits.substring(0, 11);
+
+    let formatted = "+55 ";
+    if (mainDigits.length > 0) {
+      formatted += "(" + mainDigits.substring(0, 2);
+    }
+    if (mainDigits.length > 2) {
+      formatted += ") " + mainDigits.substring(2, 7);
+    }
+    if (mainDigits.length > 7) {
+      formatted += "-" + mainDigits.substring(7, 11);
+    }
+    return formatted;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhone(formatPhone(e.target.value));
+  };
 
   const handleLaunch = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    // Simulação de processamento
     setTimeout(() => {
       setLoading(false);
       showSuccess("Pedido lançado com sucesso no sistema!");
       onOpenChange(false);
+      setPhone("+55 ");
     }, 1500);
   };
 
@@ -46,7 +71,6 @@ const CreateOrderModal = ({ open, onOpenChange }: CreateOrderModalProps) => {
           </DialogHeader>
 
           <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-10 max-h-[65vh] overflow-y-auto no-scrollbar">
-            {/* Coluna 1: Cliente e Loja */}
             <div className="space-y-8">
               <section className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
@@ -60,7 +84,13 @@ const CreateOrderModal = ({ open, onOpenChange }: CreateOrderModalProps) => {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Telefone / WhatsApp</Label>
-                    <Input placeholder="+55 (88) 99999-9999" className="rounded-xl h-12 font-bold" required />
+                    <Input 
+                      placeholder="+55 (88) 99999-9999" 
+                      className="rounded-xl h-12 font-bold" 
+                      value={phone}
+                      onChange={handlePhoneChange}
+                      required 
+                    />
                   </div>
                 </div>
               </section>
@@ -91,7 +121,6 @@ const CreateOrderModal = ({ open, onOpenChange }: CreateOrderModalProps) => {
               </section>
             </div>
 
-            {/* Coluna 2: Entrega e Mapa */}
             <div className="space-y-8">
               <section className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
@@ -116,7 +145,6 @@ const CreateOrderModal = ({ open, onOpenChange }: CreateOrderModalProps) => {
                 </div>
               </section>
 
-              {/* Placeholder de Mapa */}
               <div className="w-full h-48 bg-slate-100 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 relative overflow-hidden group">
                 <img 
                   src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=600&q=80" 

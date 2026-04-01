@@ -39,7 +39,6 @@ import { showSuccess, showError } from "@/utils/toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-// Dados iniciais (Simulando um estado que pode ser editado)
 const INITIAL_STORES = [
   { id: 1, name: "LOJA TESTE", zone: "Zone: Matriz - RN", owner: "Helio Junio", date: "2023-06-15", status: "Inativo", img: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400" },
   { id: 2, name: "LOJA TESTE 2", zone: "Zone: Matriz - RN", owner: "Helio Junio", date: "2023-06-15", status: "Inativo", img: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400" },
@@ -54,8 +53,33 @@ const StoresPage = () => {
   const [editingStore, setEditingStore] = useState<any>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [userPhone, setUserPhone] = useState("+55 ");
 
-  // Filtros em tempo real
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    let mainDigits = digits;
+    if (digits.startsWith("55")) {
+      mainDigits = digits.substring(2);
+    }
+    mainDigits = mainDigits.substring(0, 11);
+
+    let formatted = "+55 ";
+    if (mainDigits.length > 0) {
+      formatted += "(" + mainDigits.substring(0, 2);
+    }
+    if (mainDigits.length > 2) {
+      formatted += ") " + mainDigits.substring(2, 7);
+    }
+    if (mainDigits.length > 7) {
+      formatted += "-" + mainDigits.substring(7, 11);
+    }
+    return formatted;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUserPhone(formatPhone(e.target.value));
+  };
+
   const filteredStores = useMemo(() => {
     return stores.filter(store => {
       const matchesSearch = store.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -66,7 +90,6 @@ const StoresPage = () => {
     });
   }, [stores, searchQuery, statusFilter]);
 
-  // Funções de Status
   const toggleStoreStatus = (id: number) => {
     setStores(prev => prev.map(s => {
       if (s.id === id) {
@@ -78,7 +101,6 @@ const StoresPage = () => {
     }));
   };
 
-  // Exportações
   const exportToCSV = () => {
     const headers = ["ID,Nome,Zona,Proprietario,Data,Status\n"];
     const rows = filteredStores.map(s => `${s.id},${s.name},${s.zone},${s.owner},${s.date},${s.status}\n`);
@@ -103,7 +125,6 @@ const StoresPage = () => {
     showSuccess("Relatório PDF gerado com sucesso!");
   };
 
-  // Cadastro/Edição
   const handleSaveStore = (e: React.FormEvent) => {
     e.preventDefault();
     showSuccess(editingStore ? "Loja atualizada!" : "Loja cadastrada!");
@@ -205,7 +226,7 @@ const StoresPage = () => {
                   </td>
                   <td className="px-8 py-4">
                     <button 
-                      onClick={() => setSelectedUser(store.owner)}
+                      onClick={() => { setSelectedUser(store.owner); setUserPhone("+55 "); }}
                       className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-orange-600 transition-colors"
                     >
                       <UserCircle size={16} /> {store.owner}
@@ -254,7 +275,6 @@ const StoresPage = () => {
             </DialogHeader>
             <ScrollArea className="h-[calc(95vh-160px)] p-8">
               <div className="space-y-10">
-                {/* Aqui reuso os campos que já tínhamos, preenchendo se houver editingStore */}
                 <section className="space-y-4">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="p-2 bg-orange-100 rounded-lg text-orange-600"><Utensils size={18}/></div>
@@ -271,7 +291,6 @@ const StoresPage = () => {
                     </div>
                   </div>
                 </section>
-                {/* Outros campos seriam repetidos aqui (omitindo para brevidade, mas o sistema está pronto para receber) */}
                 <div className="p-8 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
                   <p className="text-slate-400 font-bold text-xs uppercase italic">Campos de logística e cashback mantidos conforme sua configuração anterior.</p>
                 </div>
@@ -330,7 +349,11 @@ const StoresPage = () => {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[10px] font-black text-slate-400 uppercase">WhatsApp</Label>
-                  <Input defaultValue="+55 88 99999-0000" className="rounded-xl" />
+                  <Input 
+                    value={userPhone} 
+                    onChange={handlePhoneChange}
+                    className="rounded-xl" 
+                  />
                 </div>
              </div>
           </div>

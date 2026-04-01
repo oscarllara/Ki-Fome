@@ -56,7 +56,7 @@ const UsersPage = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
+    phone: "+55 ",
     password: "",
     role: "Cliente",
     initialWallet: "R$ 0,00",
@@ -72,6 +72,38 @@ const UsersPage = () => {
       localStorage.setItem("kifome_users", JSON.stringify(INITIAL_MOCK_USERS));
     }
   }, []);
+
+  const formatPhone = (value: string) => {
+    // Remove tudo que não é dígito, exceto o + inicial se existir
+    const digits = value.replace(/\D/g, "");
+    
+    // Remove o 55 inicial se o usuário digitar para não duplicar
+    let mainDigits = digits;
+    if (digits.startsWith("55")) {
+      mainDigits = digits.substring(2);
+    }
+
+    // Limita a 11 dígitos (DDD + Número)
+    mainDigits = mainDigits.substring(0, 11);
+
+    let formatted = "+55 ";
+    if (mainDigits.length > 0) {
+      formatted += "(" + mainDigits.substring(0, 2);
+    }
+    if (mainDigits.length > 2) {
+      formatted += ") " + mainDigits.substring(2, 7);
+    }
+    if (mainDigits.length > 7) {
+      formatted += "-" + mainDigits.substring(7, 11);
+    }
+    
+    return formatted;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    setFormData({ ...formData, phone: formatted });
+  };
 
   const currentFilterRole = useMemo(() => {
     if (location.pathname.includes("customers")) return "Cliente";
@@ -148,7 +180,7 @@ const UsersPage = () => {
 
     showSuccess(`${formData.name} cadastrado com sucesso!`);
     setIsAddUserOpen(false);
-    setFormData({ name: "", email: "", phone: "", password: "", role: "Cliente", initialWallet: "R$ 0,00", walletDescription: "" });
+    setFormData({ name: "", email: "", phone: "+55 ", password: "", role: "Cliente", initialWallet: "R$ 0,00", walletDescription: "" });
   };
 
   const confirmDelete = () => {
@@ -174,10 +206,10 @@ const UsersPage = () => {
             <p className="text-slate-500 font-medium">Controle total sobre os acessos do KIFOME.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => { setFormData({...formData, role: "Cliente"}); setIsAddUserOpen(true); }} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-12 gap-2 shadow-lg shadow-emerald-100">
+            <Button onClick={() => { setFormData({...formData, role: "Cliente", phone: "+55 "}); setIsAddUserOpen(true); }} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold h-12 gap-2 shadow-lg shadow-emerald-100">
               <UserPlus size={18} /> Cadastrar Cliente
             </Button>
-            <Button onClick={() => { setFormData({...formData, role: "Parceiro"}); setIsAddUserOpen(true); }} className="bg-slate-900 hover:bg-black text-white rounded-xl font-bold h-12 gap-2 shadow-lg shadow-slate-200">
+            <Button onClick={() => { setFormData({...formData, role: "Parceiro", phone: "+55 "}); setIsAddUserOpen(true); }} className="bg-slate-900 hover:bg-black text-white rounded-xl font-bold h-12 gap-2 shadow-lg shadow-slate-200">
               <Plus size={18} /> Novo Usuário Especial
             </Button>
           </div>
@@ -277,7 +309,13 @@ const UsersPage = () => {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">WhatsApp</Label>
-                    <Input placeholder="+55 (88) 99999-9999" className="rounded-xl h-12 font-bold" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required />
+                    <Input 
+                      placeholder="+55 (88) 99999-9999" 
+                      className="rounded-xl h-12 font-bold" 
+                      value={formData.phone} 
+                      onChange={handlePhoneChange}
+                      required 
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Senha de Acesso</Label>

@@ -71,6 +71,32 @@ const UserDetailsPage = () => {
     if (savedAddresses) setAddresses(JSON.parse(savedAddresses));
   }, [id]);
 
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    let mainDigits = digits;
+    if (digits.startsWith("55")) {
+      mainDigits = digits.substring(2);
+    }
+    mainDigits = mainDigits.substring(0, 11);
+
+    let formatted = "+55 ";
+    if (mainDigits.length > 0) {
+      formatted += "(" + mainDigits.substring(0, 2);
+    }
+    if (mainDigits.length > 2) {
+      formatted += ") " + mainDigits.substring(2, 7);
+    }
+    if (mainDigits.length > 7) {
+      formatted += "-" + mainDigits.substring(7, 11);
+    }
+    return formatted;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    setUser({ ...user, phone: formatted });
+  };
+
   const saveToLocal = (updatedUser: any) => {
     const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
     setUsers(updatedUsers);
@@ -299,7 +325,11 @@ const UserDetailsPage = () => {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">WhatsApp / Celular</Label>
-                      <Input value={user.phone} onChange={(e) => setUser({...user, phone: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-lg focus:ring-2 focus:ring-orange-500/20" />
+                      <Input 
+                        value={user.phone} 
+                        onChange={handlePhoneChange}
+                        className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-lg focus:ring-2 focus:ring-orange-500/20" 
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Senha Atual</Label>
